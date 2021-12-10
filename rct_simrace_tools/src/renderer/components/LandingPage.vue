@@ -46,7 +46,9 @@
 </script>
 
 <style>
-	
+	body {
+		padding: 0rem;
+	}
 
 	.bottom {
 		margin-top: 13px;
