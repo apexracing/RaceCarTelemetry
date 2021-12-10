@@ -28,7 +28,7 @@
       "dist/electron/**/*"
     ],
     "win": {
-      "icon": "build/${name}.ico",
+      "icon": "build/icons/${name}.ico",
       "artifactName": "${name}_setup_${version}.${ext}",
       "target": [
         "nsis"
