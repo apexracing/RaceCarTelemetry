@@ -6,6 +6,8 @@
 后台管理WEB项目，采用VUE+ElementUI开发->远程调用RCTPlatform.
 ## [RCTUserPortalWeb](./RCTUserPortalWeb)
 用户数据分析WEB项目，采用VUE+ElementUI开发->远程调用RCTPlatform.
+## [RCTUserPortalApp](./RCTUserPortalApp)
+用户数据分析手机App项目，采用flutter开发->远程调用RCTPlatform.
 ## [RCTSimRaceTools](./RCTSimRaceTools)
 模拟器数据采停柩项目，采用VUE+Electron+ElementUI开发.
 ## [RCTPlatform ](./RCTPlatform) 
