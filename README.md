@@ -1,6 +1,7 @@
 # RaceCarTelemetry
 采集 ACC,AC,赛豆现实赛车摇测数据，上传到平台上进行分享，分析，排名奖励。数据获取者将获得赛车能力的提升，数据和赛车调校分享者将会获得收益。
 
+![avatar](./advatar/network.png)
 
 ## [RCTAdminPortalWeb](./rct_admin_portal_web) 
 后台管理WEB项目，采用VUE+ElementUI开发->远程调用RCTPlatform.
