@@ -71,6 +71,6 @@
 	}
 
 	.box-card {
-		width: 250px;
+		width: 233px;
 	}
 </style>
