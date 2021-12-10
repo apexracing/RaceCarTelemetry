@@ -46,9 +46,7 @@
 </script>
 
 <style>
-	.root {
-		padding: 0.3125rem;
-	}
+	
 
 	.bottom {
 		margin-top: 13px;
