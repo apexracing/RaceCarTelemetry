@@ -28,14 +28,14 @@ function createWindow() {
 	 * Initial window options
 	 */
 	mainWindow = new BrowserWindow({
-		height: 800,
+		height: 600,
 		useContentSize: true,
 		width: 1024,
 		webPreferences: {
 			webSecurity: false
 		}
 	})
-
+	mainWindow.setResizable(false)
 	mainWindow.loadURL(winURL)
 	// 关闭
 	mainWindow.on('close', (event) => {
