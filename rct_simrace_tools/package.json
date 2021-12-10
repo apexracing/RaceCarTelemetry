@@ -1,5 +1,5 @@
 {
-  "name": "rct_simrace_tools",
+  "name": "simracetools",
   "version": "0.0.1",
   "author": "",
   "description": "An electron-vue project",
@@ -19,7 +19,7 @@
     "postinstall": "npm run lint:fix"
   },
   "build": {
-    "productName": "rct_simrace_tools",
+    "productName": "simracetools",
     "appId": "com.rct.simrace",
     "directories": {
       "output": "build"
@@ -27,29 +27,17 @@
     "files": [
       "dist/electron/**/*"
     ],
-    "dmg": {
-      "contents": [
-        {
-          "x": 410,
-          "y": 150,
-          "type": "link",
-          "path": "/Applications"
-        },
-        {
-          "x": 130,
-          "y": 150,
-          "type": "file"
-        }
+    "win": {
+      "icon": "build/${name}.ico",
+      "artifactName": "${name}_setup_${version}.${ext}",
+      "target": [
+        "nsis"
       ]
     },
-    "mac": {
-      "icon": "build/icons/icon.icns"
-    },
-    "win": {
-      "icon": "build/icons/icon.ico"
-    },
-    "linux": {
-      "icon": "build/icons"
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
     }
   },
   "dependencies": {
@@ -59,7 +47,9 @@
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0"
+    "vuex-electron": "^1.0.0",
+    "vue-resource": "^1.5.1",
+    "electron-store": "^5.1.1"
   },
   "devDependencies": {
     "ajv": "^6.5.0",
