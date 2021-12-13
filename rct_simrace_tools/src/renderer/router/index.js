@@ -10,6 +10,11 @@ export default new Router({
       name: 'landing-page',
       component: require('@/components/LandingPage').default
     },
+		{
+		  path: '/laps-page/:deviceId',
+		  name: 'laps-page',
+		  component: require('@/components/LapsPage').default
+		},
     {
       path: '*',
       redirect: '/'

@@ -7,7 +7,7 @@
 					<div style="padding: 10px;">
 						<span>AssettoCorsa</span>
 						<div class="bottom clearfix">
-							<el-button type="primary" style="float: right;">启动</el-button>
+							<el-button type="primary" style="float: right;" @click="start_ac()">启动</el-button>
 						</div>
 					</div>
 				</el-card>
@@ -41,7 +41,12 @@
 <script>
 	/* eslint-disable */
 	export default {
-		name: 'landing-page'
+		name: 'landing-page',
+		methods: {
+			start_ac() {
+				this.$router.push('/laps-page/ac')
+			}
+		}
 	}
 </script>
 
