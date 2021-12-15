@@ -22,7 +22,7 @@
 					</el-descriptions>
 				</el-col>
 				<el-col :span="12">
-					<Plotly :data="data" :layout="layout" :display-mode-bar="false" :staticPlot="true" style="width: 400px;height: 400px;"></Plotly>
+					<Plotly :data="track_map" :layout="layout" :display-mode-bar="false" :staticPlot="true"></Plotly>
 				</el-col>
 			</el-row>
 		</div>
@@ -68,14 +68,30 @@
 		},
 		data() {
 			return {
-				data: [{
+				track_map: [{
 					x: [1, 2, 3, 4],
 					y: [10, 15, 13, 17],
 					type: "scatter"
 				}],
 				layout: {
+					width: 400,
+					height: 400,
+					margin:{r:50,t:50,l:50,b:50},
+					borderwidth:1,
 					showlegend: false,
-					title: "Track Map"
+					title: "Track Map",
+					xaxis: {
+						showline: false,
+						showgrid: false,
+						zeroline: false,
+						showticklabels: false,
+					},
+					yaxis: {
+						showline: false,
+						showgrid: false,
+						zeroline: false,
+						showticklabels: false
+					}
 				},
 				realtime_show: true,
 				sector_show: false,
@@ -99,7 +115,7 @@
 							'text': 'connecting to assetto corsa,please start the game or check your firewall.'
 						});
 						this.$data.sector_show = false;
-						this.start_ac()
+						this.start_ac();
 						break;
 					}
 				case 'acc':
@@ -110,6 +126,8 @@
 							fullscreen: true,
 							'text': 'connecting to assetto corsa competizione'
 						});
+						this.start_acc();
+						break;
 					}
 				case 'vob':
 					{
@@ -132,26 +150,49 @@
 							fullscreen: true,
 							'text': 'busy analyse vbo file,please wait...'
 						});
-						this.process_vob(selectFilePath[0],this.loadingInstance);
+						this.process_vob(selectFilePath[0], this.loadingInstance);
 						break;
 					}
 			}
 		},
 
 		methods: {
-			 process_vob(file,loading) {
-				console.log('正在分析文件:'+file)
+			process_vob(file, loading) {
+				console.log('正在分析文件:' + file)
 				var fs = require('fs');
 				var readline = require('readline');
 				var fRead = fs.createReadStream(file);
 				var objReadline = readline.createInterface({
 					input: fRead
 				});
+				var vob_data = {};
+				var vob_column = [];
+				var section = "";
 				objReadline.on('line', function(line) {
-					console.log(line);
+					if (line.startsWith("[")) {
+						section = line;
+					} else if (line.length > 0) {
+						if (section == "[column names]") {
+							vob_column = line.trim().split(" ");
+							for (var i in vob_column) {
+								var column_name = vob_column[i];
+								vob_data[column_name] = new Array();
+							}
+							console.log(vob_data)
+						}
+						if (section == "[data]") {
+							var vob_row = line.trim().split(" ");
+							for (var i in vob_row) {
+								var column_name = vob_column[i];
+								vob_data[column_name].push(vob_row[i]);
+							}
+						}
+					}
 				});
-				objReadline.on('close', function() {
+				objReadline.on('close', () => {
 					loading.close();
+					this.$data.track_map[0].x = vob_data["lat"];
+					this.$data.track_map[0].y = vob_data["long"];
 				});
 			},
 			start_ac() {
@@ -173,6 +214,9 @@
 
 				// Subscribe to desired updates
 				//client.subscribeUpdate();
+			},
+			start_acc() {
+
 			}
 		}
 	}
