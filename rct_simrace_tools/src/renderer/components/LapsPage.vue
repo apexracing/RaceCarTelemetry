@@ -26,6 +26,7 @@
 				</el-col>
 			</el-row>
 		</div>
+		<span>&nbsp;</span>
 		<el-table :data="lapsData" style="width: 100%" height="250" border stripe>
 			<el-table-column prop="lap" label="lap" width="80">
 			</el-table-column>
@@ -68,9 +69,11 @@
 		},
 		data() {
 			return {
+				vob_column:[],
+				vob_data:{},
 				track_map: [{
-					x: [1, 2, 3, 4],
-					y: [10, 15, 13, 17],
+					x: [],
+					y: [],
 					type: "scatter"
 				}],
 				layout: {
@@ -132,7 +135,10 @@
 				case 'vob':
 					{
 						this.$data.info_show = false;
-						this.$data.realtime_show = false;
+						this.$data.realtime_show = true;
+						if(this.$data.vob_column.length>0){
+							break;
+						}
 						this.loadingInstance = Loading.service({
 							fullscreen: true,
 							'text': 'please select an vbo file to import'
@@ -157,43 +163,57 @@
 		},
 
 		methods: {
+			//分析vbo文件
 			process_vob(file, loading) {
-				console.log('正在分析文件:' + file)
+				console.log('正在分析VBO文件:' + file)
 				var fs = require('fs');
 				var readline = require('readline');
 				var fRead = fs.createReadStream(file);
 				var objReadline = readline.createInterface({
 					input: fRead
 				});
-				var vob_data = {};
-				var vob_column = [];
+		
 				var section = "";
-				objReadline.on('line', function(line) {
+				objReadline.on('line', (line)=>{
 					if (line.startsWith("[")) {
 						section = line;
 					} else if (line.length > 0) {
 						if (section == "[column names]") {
-							vob_column = line.trim().split(" ");
-							for (var i in vob_column) {
-								var column_name = vob_column[i];
-								vob_data[column_name] = new Array();
+							this.vob_column = line.trim().split(" ");
+							for (var i in this.vob_column) {
+								var column_name = this.vob_column[i];
+								this.vob_data[column_name] = new Array();
 							}
-							console.log(vob_data)
 						}
 						if (section == "[data]") {
 							var vob_row = line.trim().split(" ");
 							for (var i in vob_row) {
-								var column_name = vob_column[i];
-								vob_data[column_name].push(vob_row[i]);
+								var column_name = this.vob_column[i];
+								this.vob_data[column_name].push(vob_row[i]);
+								
 							}
 						}
 					}
 				});
 				objReadline.on('close', () => {
+					this->analyse_vob();
 					loading.close();
-					this.$data.track_map[0].x = vob_data["lat"];
-					this.$data.track_map[0].y = vob_data["long"];
 				});
+			},
+			/**
+			 * 分析VOB
+			 * 算法1:取中间三分之一GPS平均坐标，与服务器赛道平均坐标对比，自动匹配赛道起点和分段
+			 * 算法2:服务器没有的赛道，取最高速度作为默认起点，用户可通过滑动条 修改“起点/终点”。
+			 */
+			analyse_vob(){
+				this.$data.track_map[0].x = this.vob_data["lat"];
+				this.$data.track_map[0].y = this.vob_data["long"];
+				//计算赛道“起/终点”
+				
+				//计算单圈数据
+				
+				//取最快圈做为赛道预览图
+				
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
