@@ -18,7 +18,7 @@
 					<div style="padding: 10px;">
 						<span>AssettoCorsaCompetition</span>
 						<div class="bottom clearfix">
-							<el-button type="primary" style="float: right;">启动</el-button>
+							<el-button type="primary" style="float: right;"  @click="start_acc()">启动</el-button>
 						</div>
 					</div>
 				</el-card>
@@ -29,7 +29,7 @@
 					<div style="padding: 10px;">
 						<span>GpsDevices</span>
 						<div class="bottom clearfix">
-							<el-button type="primary" style="float: right;">打开</el-button>
+							<el-button type="primary" style="float: right;"  @click="start_vob()">打开</el-button>
 						</div>
 					</div>
 				</el-card>
@@ -45,6 +45,12 @@
 		methods: {
 			start_ac() {
 				this.$router.push('/laps-page/ac')
+			},
+			start_acc() {
+				this.$router.push('/laps-page/acc')
+			},
+			start_vob(){
+				this.$router.push('/laps-page/vob')
 			}
 		}
 	}

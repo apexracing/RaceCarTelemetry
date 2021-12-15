@@ -28,11 +28,12 @@ function createWindow() {
 	 * Initial window options
 	 */
 	mainWindow = new BrowserWindow({
-		height: 600,
-		useContentSize: true,
+		height: 800,
+		useContentSize: false,
 		width: 1024,
 		webPreferences: {
-			webSecurity: false
+			webSecurity: false,
+			enableRemoteModule: true
 		}
 	})
 	mainWindow.setResizable(false)
