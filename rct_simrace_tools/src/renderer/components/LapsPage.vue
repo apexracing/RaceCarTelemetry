@@ -22,7 +22,7 @@
 					</el-descriptions>
 				</el-col>
 				<el-col :span="12">
-					<Plotly :data="track_map" :layout="layout" :display-mode-bar="false" :staticPlot="true"></Plotly>
+					<div id="track_map" width="400" height="400"></div>
 				</el-col>
 			</el-row>
 		</div>
@@ -51,9 +51,7 @@
 <script>
 	/* eslint-disable */
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
-	import {
-		Plotly
-	} from 'vue-plotly'
+
 	import {
 		Loading
 	} from 'element-ui';
@@ -61,41 +59,14 @@
 		dialog
 	} = require('electron').remote;
 
+	import * as d3 from 'd3/dist/d3.min'
 
 	export default {
 		name: 'laps-page',
-		components: {
-			Plotly
-		},
 		data() {
 			return {
-				vob_column:[],
-				vob_data:{},
-				track_map: [{
-					x: [],
-					y: [],
-					type: "scatter"
-				}],
-				layout: {
-					width: 400,
-					height: 400,
-					margin:{r:50,t:50,l:50,b:50},
-					borderwidth:1,
-					showlegend: false,
-					title: "Track Map",
-					xaxis: {
-						showline: false,
-						showgrid: false,
-						zeroline: false,
-						showticklabels: false,
-					},
-					yaxis: {
-						showline: false,
-						showgrid: false,
-						zeroline: false,
-						showticklabels: false
-					}
-				},
+				vob_column: [],
+				vob_data: [],
 				realtime_show: true,
 				sector_show: false,
 				lapsData: [{
@@ -136,7 +107,7 @@
 					{
 						this.$data.info_show = false;
 						this.$data.realtime_show = true;
-						if(this.$data.vob_column.length>0){
+						if (this.$data.vob_column.length > 0) {
 							break;
 						}
 						this.loadingInstance = Loading.service({
@@ -157,6 +128,8 @@
 							'text': 'busy analyse vbo file,please wait...'
 						});
 						this.process_vob(selectFilePath[0], this.loadingInstance);
+
+
 						break;
 					}
 			}
@@ -172,31 +145,31 @@
 				var objReadline = readline.createInterface({
 					input: fRead
 				});
-		
+
 				var section = "";
-				objReadline.on('line', (line)=>{
+				objReadline.on('line', (line) => {
 					if (line.startsWith("[")) {
 						section = line;
 					} else if (line.length > 0) {
 						if (section == "[column names]") {
 							this.vob_column = line.trim().split(" ");
-							for (var i in this.vob_column) {
-								var column_name = this.vob_column[i];
-								this.vob_data[column_name] = new Array();
-							}
 						}
 						if (section == "[data]") {
 							var vob_row = line.trim().split(" ");
+							var vob_row_data = {};
 							for (var i in vob_row) {
 								var column_name = this.vob_column[i];
-								this.vob_data[column_name].push(vob_row[i]);
-								
+								vob_row_data[column_name] = parseFloat(vob_row[i]);
 							}
+							this.vob_data.push(vob_row_data);
 						}
 					}
 				});
 				objReadline.on('close', () => {
-					this->analyse_vob();
+					this.analyse_vob();
+					console.log("VOB文件分析完成")
+					//console.log(this.vob_column);
+					//console.log(this.vob_data);
 					loading.close();
 				});
 			},
@@ -205,15 +178,60 @@
 			 * 算法1:取中间三分之一GPS平均坐标，与服务器赛道平均坐标对比，自动匹配赛道起点和分段
 			 * 算法2:服务器没有的赛道，取最高速度作为默认起点，用户可通过滑动条 修改“起点/终点”。
 			 */
-			analyse_vob(){
-				this.$data.track_map[0].x = this.vob_data["lat"];
-				this.$data.track_map[0].y = this.vob_data["long"];
+			analyse_vob() {
+				var margin = {
+						top: 10,
+						right: 20,
+						bottom: 10,
+						left: 20
+					},
+					width = 400 - margin.left - margin.right,
+					height = 400 - margin.top - margin.bottom;
+
+				var svg = d3.select("#track_map").append("svg")
+					.attr("width", width + margin.left + margin.right)
+					.attr("height", height + margin.top + margin.bottom)
+					.append("g")
+					.attr("transform",
+						"translate(" + margin.left + "," + margin.top + ")");
+				var xscl = d3.scaleLinear()
+					.domain(d3.extent(this.vob_data, function(d) {
+						return d.lat;
+					})) //use just the x part
+					.range([0, width])
+
+				var yscl = d3.scaleLinear()
+					.domain(d3.extent(this.vob_data, function(d) {
+						return d.long;
+					})) // use just the y part
+					.range([height, 0])
+
+
+				svg.append("path")
+					.datum(this.vob_data)
+					.attr("fill", "none")
+					.attr("stroke", "green")
+					.attr("stroke-width", 2)
+					.attr("d", d3.line()
+						.x(function(d) {
+							return xscl(d.lat);
+						}) // apply the x scale to the x data
+						.y(function(d) {
+							return yscl(d.long);
+						}))
+
+
+				//this.$data.track_map[0].y = this.vob_data["long"]; //第一层地图数据，第二层赛道trigger
+				var max_speed = this.vob_data.reduce(function(prev, current) {
+					return (prev.velocity > current.velocity) ? prev : current
+				}) //returns object
+				console.log("最高速度:" + max_speed.velocity)
 				//计算赛道“起/终点”
-				
+
 				//计算单圈数据
-				
+
 				//取最快圈做为赛道预览图
-				
+
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");

@@ -36,7 +36,7 @@ function createWindow() {
 			enableRemoteModule: true
 		}
 	})
-	mainWindow.setResizable(false)
+	mainWindow.setResizable(true)
 	mainWindow.loadURL(winURL)
 	// 关闭
 	mainWindow.on('close', (event) => {
