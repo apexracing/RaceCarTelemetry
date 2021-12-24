@@ -57,18 +57,13 @@
 		<el-table :data="lapsData" style="width: 100%" height="200" border stripe class="table">
 			<el-table-column prop="lap" label="lap" width="80">
 			</el-table-column>
-			<el-table-column prop="topspeed" label="topspeed" width="180">
-			</el-table-column>
-			<el-table-column prop="lowspeed" label="lowspeed" width="180">
-			</el-table-column>
 			<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
 			</el-table-column>
 			<el-table-column prop="s2" label="S2" width="120" v-if="sector_show">
 			</el-table-column>
 			<el-table-column prop="s3" label="S3" width="120" v-if="sector_show">
 			</el-table-column>
-
-			<el-table-column prop="laptime" label="laptime" width="180">
+			<el-table-column prop="laptime" label="laptime" width="120">
 			</el-table-column>
 		</el-table>
 
@@ -99,15 +94,7 @@
 				vob_data: [],
 				realtime_show: true,
 				sector_show: false,
-				lapsData: [{
-					lap: 1,
-					laptime: '1.34.5',
-					topspeed: 256,
-					lowspeed: 86,
-					s1: 34.56,
-					s2: 33.52,
-					s3: 35.61
-				}]
+				lapsData: []
 			}
 		},
 		created() {
@@ -135,6 +122,7 @@
 					}
 				case 'vob':
 					{
+						this.$data.sector_show =false;
 						this.$data.info_show = false;
 						this.$data.realtime_show = true;
 						if (this.$data.vob_column.length > 0) {
@@ -377,7 +365,7 @@
 	}
 
 	svg .track_trigger {
-		stroke: #D91E18;
-		stroke-width: 2;
+		stroke: #000000;
+		stroke-width:2;
 	}
 </style>
