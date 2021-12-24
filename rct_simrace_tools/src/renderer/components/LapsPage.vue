@@ -24,6 +24,9 @@
 				</el-col>
 				<el-col :span="12">
 					<div id="track_map">
+						<svg width="400" height="400">
+							<g></g>
+						</svg>
 					</div>
 				</el-col>
 			</el-row>
@@ -211,15 +214,25 @@
 						bottom: 20,
 						left: 20
 					},
-					width = 350 - margin.left - margin.right,
-					height = 350 - margin.top - margin.bottom;
-
-				var g = d3.select("#track_map").append("svg")
+					width = 400 - margin.left - margin.right,
+					height = 400 - margin.top - margin.bottom;
+				var svg = d3.select("#track_map svg")
 					.attr("width", width + margin.left + margin.right)
 					.attr("height", height + margin.top + margin.bottom)
-					.append("g")
+				var g = svg.select("g")
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
+				function handleZoom(e) {
+					d3.select('#track_map svg g')
+						.attr('transform', e.transform);
+				}
+				let zoom = d3.zoom()
+					.scaleExtent([1, 5])
+					.translateExtent([
+						[0, 0],
+						[width, height]
+					]).on("zoom", handleZoom);
+				d3.select("#track_map svg").call(zoom);
 				var xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.lat;
@@ -251,7 +264,7 @@
 					return b.velocity - a.velocity
 				});
 				var auto_trigger = this.vob_data[max_idx];
-				this.add_trigger_in_path([xscl(auto_trigger.lat),yscl(auto_trigger.long)]);
+				this.add_trigger_in_path([xscl(auto_trigger.lat), yscl(auto_trigger.long)]);
 				//计算单圈数据
 				path.on("click", (e, d) => {
 					var pointer = d3.pointer(e);
@@ -261,7 +274,7 @@
 				//取最快圈做为赛道预览图
 
 			},
-			add_trigger_in_path(point){
+			add_trigger_in_path(point) {
 				var node = d3.select("path").node();
 				var pathLen = node.getTotalLength();
 				var distanceall = [];
@@ -303,6 +316,9 @@
 				});
 				this.render_trigger();
 			},
+			/**
+			 * 画赛道分割线
+			 */
 			render_trigger() {
 				var trigger = d3.select("svg").select("g").selectAll("line.track_trigger").data(this.triggers, (d) => d.id);
 				trigger.enter().append("line").attr(
@@ -361,7 +377,7 @@
 	}
 
 	svg .track_trigger {
-		stroke: #000000;
+		stroke: #D91E18;
 		stroke-width: 2;
 	}
 </style>
