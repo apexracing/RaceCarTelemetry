@@ -1,12 +1,7 @@
 <template>
 	<el-container>
-	  <el-aside width="400px" >
-		<div id="track_map" style="border-right:#EBEEF5 1px solid;">
-			<svg width="400" height="400">
-				<g></g>
-			</svg>
-		</div>
-		  <el-table :data="lapsData" style="width: 100%;" border stripe>
+	  <el-aside width="auto" >
+		  <el-table :data="lapsData" style="width: 100%;" max-height="400" height="400" border>
 		  	<el-table-column prop="lap" label="lap" width="80">
 		  	</el-table-column>
 		  	<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
@@ -18,6 +13,11 @@
 		  	<el-table-column prop="laptime" label="laptime" width="120">
 		  	</el-table-column>
 		  </el-table>
+		  <div id="track_map" style="border:#EBEEF5 solid 1px;margin-top: 5px;">
+		  	<svg width="400" height="400">
+		  		<g></g>
+		  	</svg>
+		  </div>
 	  </el-aside>
 	  <el-container>
 	    <el-header>
@@ -370,11 +370,6 @@
 		margin-top: 10px;
 		margin-bottom: 10px;
 	}
-
-	.table {
-		box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-	}
-
 	svg .track_trigger {
 		stroke: #000000;
 		stroke-width:2;
