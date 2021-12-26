@@ -1,73 +1,83 @@
 <template>
-	<div>
-		<div class="info">
-
-			<el-row type="flex" align="middle">
-				<el-col :span="12">
-					<el-descriptions>
-						<el-descriptions-item label="Driver">nick</el-descriptions-item>
-						<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
-						<el-descriptions-item label="Track">XIC</el-descriptions-item>
-					</el-descriptions>
-					<el-descriptions :column="2" border v-if="realtime_show">
-						<el-descriptions-item label="speed">265km/h</el-descriptions-item>
-						<el-descriptions-item label="throttle">%</el-descriptions-item>
-						<el-descriptions-item label="brake">100%</el-descriptions-item>
-						<el-descriptions-item label="clutch">55%</el-descriptions-item>
-						<el-descriptions-item label="rpm">7200</el-descriptions-item>
-						<el-descriptions-item label="gear">5</el-descriptions-item>
-						<el-descriptions-item label="steer">32</el-descriptions-item>
-						<el-descriptions-item label="G_V">1.5G</el-descriptions-item>
-						<el-descriptions-item label="G_H">0.l8G</el-descriptions-item>
-						<el-descriptions-item label="lapTime">1.45.323</el-descriptions-item>
-					</el-descriptions>
-				</el-col>
-				<el-col :span="12">
-					<div id="track_map">
-						<svg width="400" height="400">
-							<g></g>
-						</svg>
-					</div>
-				</el-col>
-			</el-row>
+	<el-container>
+	  <el-aside width="400px" >
+		<div id="track_map" style="border-right:#EBEEF5 1px solid;">
+			<svg width="400" height="400">
+				<g></g>
+			</svg>
 		</div>
-		<div class="play">
-			<el-row>
-				<el-col :span="8">
-					<el-row align="middle" type="flex" justify="start">
-						<el-col :span="8">
-							<el-button type="primary" circle icon="el-icon-video-play"></el-button>
-						</el-col>
-						<el-col :span="4">
-							<el-button circle icon="el-icon-d-arrow-left"></el-button>
-						</el-col>
-						<el-col :span="4">
-							<el-button type="text" circle style="color:#303133;font-size: large;">0x</el-button>
-						</el-col>
-						<el-col :span="4">
-							<el-button circle icon="el-icon-d-arrow-right"></el-button>
-						</el-col>
-					</el-row>
-				</el-col>
-				<el-col :span="16">
-					<el-slider v-model="trackerPlayer"></el-slider>
-				</el-col>
-			</el-row>
-		</div>
-		<el-table :data="lapsData" style="width: 100%" height="200" border stripe class="table">
-			<el-table-column prop="lap" label="lap" width="80">
-			</el-table-column>
-			<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
-			</el-table-column>
-			<el-table-column prop="s2" label="S2" width="120" v-if="sector_show">
-			</el-table-column>
-			<el-table-column prop="s3" label="S3" width="120" v-if="sector_show">
-			</el-table-column>
-			<el-table-column prop="laptime" label="laptime" width="120">
-			</el-table-column>
-		</el-table>
+		  <el-table :data="lapsData" style="width: 100%;" border stripe>
+		  	<el-table-column prop="lap" label="lap" width="80">
+		  	</el-table-column>
+		  	<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
+		  	</el-table-column>
+		  	<el-table-column prop="s2" label="S2" width="120" v-if="sector_show">
+		  	</el-table-column>
+		  	<el-table-column prop="s3" label="S3" width="120" v-if="sector_show">
+		  	</el-table-column>
+		  	<el-table-column prop="laptime" label="laptime" width="120">
+		  	</el-table-column>
+		  </el-table>
+	  </el-aside>
+	  <el-container>
+	    <el-header>
+			<div class="info">
+		
+				<el-row type="flex" align="middle">
+					<el-col :span="12">
+						<el-descriptions>
+							<el-descriptions-item label="Driver">nick</el-descriptions-item>
+							<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
+							<el-descriptions-item label="Track">XIC</el-descriptions-item>
+						</el-descriptions>
+						<el-descriptions :column="2" border v-if="realtime_show">
+							<el-descriptions-item label="speed">265km/h</el-descriptions-item>
+							<el-descriptions-item label="throttle">%</el-descriptions-item>
+							<el-descriptions-item label="brake">100%</el-descriptions-item>
+							<el-descriptions-item label="clutch">55%</el-descriptions-item>
+							<el-descriptions-item label="rpm">7200</el-descriptions-item>
+							<el-descriptions-item label="gear">5</el-descriptions-item>
+							<el-descriptions-item label="steer">32</el-descriptions-item>
+							<el-descriptions-item label="G_V">1.5G</el-descriptions-item>
+							<el-descriptions-item label="G_H">0.l8G</el-descriptions-item>
+							<el-descriptions-item label="lapTime">1.45.323</el-descriptions-item>
+						</el-descriptions>
+					</el-col>
+					
+				</el-row>
+		
+			<div class="play">
+				<el-row>
+					<el-col :span="8">
+						<el-row align="middle" type="flex" justify="start">
+							<el-col :span="8">
+								<el-button type="primary" circle icon="el-icon-video-play"></el-button>
+							</el-col>
+							<el-col :span="4">
+								<el-button circle icon="el-icon-d-arrow-left"></el-button>
+							</el-col>
+							<el-col :span="4">
+								<el-button type="text" circle style="color:#303133;font-size: large;">0x</el-button>
+							</el-col>
+							<el-col :span="4">
+								<el-button circle icon="el-icon-d-arrow-right"></el-button>
+							</el-col>
+						</el-row>
+					</el-col>
+					<el-col :span="16">
+						<el-slider v-model="trackerPlayer"></el-slider>
+					</el-col>
+				</el-row>
+			</div>
+			</div>
+		</el-header>
+	    <el-main>
+			
+			
+		</el-main>
+	  </el-container>
+	</el-container>
 
-	</div>
 </template>
 
 <script>
@@ -354,9 +364,10 @@
 	}
 
 	.play {
-		border: 1px solid #DCDFE6;
+		border: 1px solid #EBEEF5;
 		border-radius: 0px;
 		padding: 15px;
+		margin-top: 10px;
 		margin-bottom: 10px;
 	}
 
