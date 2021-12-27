@@ -1,81 +1,81 @@
 <template>
 	<el-container>
-	  <el-aside width="auto" >
-		  <el-table :data="lapsData" style="width: 100%;" max-height="400" height="400" border>
-		  	<el-table-column prop="lap" label="lap" width="80">
-		  	</el-table-column>
-		  	<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
-		  	</el-table-column>
-		  	<el-table-column prop="s2" label="S2" width="120" v-if="sector_show">
-		  	</el-table-column>
-		  	<el-table-column prop="s3" label="S3" width="120" v-if="sector_show">
-		  	</el-table-column>
-		  	<el-table-column prop="laptime" label="laptime" width="120">
-		  	</el-table-column>
-		  </el-table>
-		  <div id="track_map" style="border:#EBEEF5 solid 1px;margin-top: 5px;">
-		  	<svg width="400" height="400">
-		  		<g></g>
-		  	</svg>
-		  </div>
-	  </el-aside>
-	  <el-container>
-	    <el-header>
-			<div class="info">
-		
-				<el-row type="flex" align="middle">
-					<el-col :span="12">
-						<el-descriptions>
-							<el-descriptions-item label="Driver">nick</el-descriptions-item>
-							<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
-							<el-descriptions-item label="Track">XIC</el-descriptions-item>
-						</el-descriptions>
-						<el-descriptions :column="2" border v-if="realtime_show">
-							<el-descriptions-item label="speed">265km/h</el-descriptions-item>
-							<el-descriptions-item label="throttle">%</el-descriptions-item>
-							<el-descriptions-item label="brake">100%</el-descriptions-item>
-							<el-descriptions-item label="clutch">55%</el-descriptions-item>
-							<el-descriptions-item label="rpm">7200</el-descriptions-item>
-							<el-descriptions-item label="gear">5</el-descriptions-item>
-							<el-descriptions-item label="steer">32</el-descriptions-item>
-							<el-descriptions-item label="G_V">1.5G</el-descriptions-item>
-							<el-descriptions-item label="G_H">0.l8G</el-descriptions-item>
-							<el-descriptions-item label="lapTime">1.45.323</el-descriptions-item>
-						</el-descriptions>
-					</el-col>
-					
-				</el-row>
-		
-			<div class="play">
-				<el-row>
-					<el-col :span="8">
-						<el-row align="middle" type="flex" justify="start">
+		<el-aside width="auto">
+			<el-table :data="lapsData" style="width: 100%;" max-height="400" height="400" border>
+				<el-table-column prop="lap" label="lap" width="80">
+				</el-table-column>
+				<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
+				</el-table-column>
+				<el-table-column prop="s2" label="S2" width="120" v-if="sector_show">
+				</el-table-column>
+				<el-table-column prop="s3" label="S3" width="120" v-if="sector_show">
+				</el-table-column>
+				<el-table-column prop="laptime" label="laptime" width="120">
+				</el-table-column>
+			</el-table>
+			<div id="track_map" style="border:#EBEEF5 solid 1px;margin-top: 5px;">
+				<svg width="400" height="400">
+					<g></g>
+				</svg>
+			</div>
+		</el-aside>
+		<el-container>
+			<el-header>
+				<div class="info">
+
+					<el-row type="flex" align="middle">
+						<el-col :span="12">
+							<el-descriptions>
+								<el-descriptions-item label="Driver">nick</el-descriptions-item>
+								<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
+								<el-descriptions-item label="Track">XIC</el-descriptions-item>
+							</el-descriptions>
+							<el-descriptions :column="2" border v-if="realtime_show">
+								<el-descriptions-item label="speed">265km/h</el-descriptions-item>
+								<el-descriptions-item label="throttle">%</el-descriptions-item>
+								<el-descriptions-item label="brake">100%</el-descriptions-item>
+								<el-descriptions-item label="clutch">55%</el-descriptions-item>
+								<el-descriptions-item label="rpm">7200</el-descriptions-item>
+								<el-descriptions-item label="gear">5</el-descriptions-item>
+								<el-descriptions-item label="steer">32</el-descriptions-item>
+								<el-descriptions-item label="G_V">1.5G</el-descriptions-item>
+								<el-descriptions-item label="G_H">0.l8G</el-descriptions-item>
+								<el-descriptions-item label="lapTime">1.45.323</el-descriptions-item>
+							</el-descriptions>
+						</el-col>
+
+					</el-row>
+
+					<div class="play">
+						<el-row>
 							<el-col :span="8">
-								<el-button type="primary" circle icon="el-icon-video-play"></el-button>
+								<el-row align="middle" type="flex" justify="start">
+									<el-col :span="8">
+										<el-button type="primary" circle icon="el-icon-video-play"></el-button>
+									</el-col>
+									<el-col :span="4">
+										<el-button circle icon="el-icon-d-arrow-left"></el-button>
+									</el-col>
+									<el-col :span="4">
+										<el-button type="text" circle style="color:#303133;font-size: large;">0x</el-button>
+									</el-col>
+									<el-col :span="4">
+										<el-button circle icon="el-icon-d-arrow-right"></el-button>
+									</el-col>
+								</el-row>
 							</el-col>
-							<el-col :span="4">
-								<el-button circle icon="el-icon-d-arrow-left"></el-button>
-							</el-col>
-							<el-col :span="4">
-								<el-button type="text" circle style="color:#303133;font-size: large;">0x</el-button>
-							</el-col>
-							<el-col :span="4">
-								<el-button circle icon="el-icon-d-arrow-right"></el-button>
+							<el-col :span="16">
+								<el-slider v-model="trackerPlayer"></el-slider>
 							</el-col>
 						</el-row>
-					</el-col>
-					<el-col :span="16">
-						<el-slider v-model="trackerPlayer"></el-slider>
-					</el-col>
-				</el-row>
-			</div>
-			</div>
-		</el-header>
-	    <el-main>
-			
-			
-		</el-main>
-	  </el-container>
+					</div>
+				</div>
+			</el-header>
+			<el-main>
+
+
+			</el-main>
+		</el-container>
 	</el-container>
 
 </template>
@@ -132,7 +132,7 @@
 					}
 				case 'vob':
 					{
-						this.$data.sector_show =false;
+						this.$data.sector_show = false;
 						this.$data.info_show = false;
 						this.$data.realtime_show = true;
 						if (this.$data.vob_column.length > 0) {
@@ -220,6 +220,7 @@
 				var g = svg.select("g")
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
+
 				function handleZoom(e) {
 					d3.select('#track_map svg g')
 						.attr('transform', e.transform);
@@ -271,7 +272,7 @@
 				});
 				//取最快圈做为赛道预览图
 			},
-			add_trigger_in_path(point) {
+			add_trigger_in_path(point, type = "start_end") {
 				var node = d3.select("path").node();
 				var pathLen = node.getTotalLength();
 				var distanceall = [];
@@ -302,14 +303,15 @@
 				var clickIdx = distanceall[d3.minIndex(distanceall, d => d.distance)].idx;
 				var dest = node.getPointAtLength(clickIdx);
 				var near = node.getPointAtLength(clickIdx - 1);
-				var angle = common.angle(dest,near);
+				var angle = common.angle(dest, near);
 				//V1中保存一个分割
 				this.triggers.shift();
 				this.triggers.push({
 					x: dest.x,
 					y: dest.y,
-					len:15,
+					len: 15,
 					angle: angle,
+					type: type,
 					id: this.trigger_id++
 				});
 				this.render_trigger();
@@ -325,7 +327,7 @@
 						"y1", (d) => d.y - d.len).attr("y2", (d) => d.y + d.len).attr("transform", (d) => "rotate(" + d.angle +
 						"," + d.x +
 						"," + d.y + ")")
-					.attr("class", "track_trigger");
+					.attr("class", (d) => "track_trigger" + " " + d.type);
 				trigger.exit().remove()
 			},
 			start_ac() {
@@ -370,8 +372,15 @@
 		margin-top: 10px;
 		margin-bottom: 10px;
 	}
+
 	svg .track_trigger {
+		stroke-width: 2;
+	}
+
+	 .start_end {
 		stroke: #000000;
-		stroke-width:2;
+	}
+ .sector {
+		stroke: #D91E18;
 	}
 </style>
