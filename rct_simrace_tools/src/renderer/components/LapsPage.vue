@@ -83,7 +83,7 @@
 <script>
 	/* eslint-disable */
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
-
+	import common from '@/components/modules/common/common'
 	import {
 		Loading
 	} from 'element-ui';
@@ -270,7 +270,6 @@
 
 				});
 				//取最快圈做为赛道预览图
-
 			},
 			add_trigger_in_path(point) {
 				var node = d3.select("path").node();
@@ -303,12 +302,13 @@
 				var clickIdx = distanceall[d3.minIndex(distanceall, d => d.distance)].idx;
 				var dest = node.getPointAtLength(clickIdx);
 				var near = node.getPointAtLength(clickIdx - 1);
-				var angle = Math.atan2(dest.y - near.y, dest.x - near.x) * 180 / Math.PI;
+				var angle = common.angle(dest,near);
 				//V1中保存一个分割
 				this.triggers.shift();
 				this.triggers.push({
 					x: dest.x,
 					y: dest.y,
+					len:15,
 					angle: angle,
 					id: this.trigger_id++
 				});
@@ -322,7 +322,7 @@
 				trigger.enter().append("line").attr(
 						"x1", (d) => d.x).attr("x2", (d) =>
 						d.x).attr(
-						"y1", (d) => d.y - 15).attr("y2", (d) => d.y + 15).attr("transform", (d) => "rotate(" + d.angle +
+						"y1", (d) => d.y - d.len).attr("y2", (d) => d.y + d.len).attr("transform", (d) => "rotate(" + d.angle +
 						"," + d.x +
 						"," + d.y + ")")
 					.attr("class", "track_trigger");
