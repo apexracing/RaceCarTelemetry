@@ -24,13 +24,13 @@
 				<div class="info">
 
 					<el-row type="flex" align="middle">
-						<el-col :span="12">
+						<el-col :span="24">
 							<el-descriptions>
 								<el-descriptions-item label="Driver">nick</el-descriptions-item>
 								<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
 								<el-descriptions-item label="Track">XIC</el-descriptions-item>
 							</el-descriptions>
-							<el-descriptions :column="2" border v-if="realtime_show">
+							<el-descriptions :column="6" border v-if="realtime_show">
 								<el-descriptions-item label="speed">265km/h</el-descriptions-item>
 								<el-descriptions-item label="throttle">%</el-descriptions-item>
 								<el-descriptions-item label="brake">100%</el-descriptions-item>
@@ -97,6 +97,8 @@
 		name: 'laps-page',
 		data() {
 			return {
+				xscl: undefined,
+				yscl: undefined,
 				trackerPlayer: 0,
 				triggers: [],
 				trigger_id: 0,
@@ -194,7 +196,7 @@
 				});
 				objReadline.on('close', () => {
 					console.log("VOB文件分析完成")
-					this.render_track();
+					this.render_track_vob();
 					//console.log(this.vob_column);
 					//console.log(this.vob_data);
 					loading.close();
@@ -205,7 +207,7 @@
 			 * 算法1:取中间三分之一GPS平均坐标，与服务器赛道平均坐标对比，自动匹配赛道起点和分段
 			 * 算法2:服务器没有的赛道，取最高速度作为默认起点，用户可通过滑动条 修改“起点/终点”。
 			 */
-			render_track() {
+			render_track_vob() {
 				var margin = {
 						top: 20,
 						right: 20,
@@ -232,13 +234,13 @@
 						[width, height]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
-				var xscl = d3.scaleLinear()
+				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.lat;
 					})) //use just the x part
 					.range([0, width])
 
-				var yscl = d3.scaleLinear()
+				this.yscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.long;
 					})) // use just the y part
@@ -251,27 +253,23 @@
 					.attr("stroke", "green")
 					.attr("stroke-width", 2)
 					.attr("d", d3.line()
-						.x(function(d) {
-							return xscl(d.lat);
-						}) // apply the x scale to the x data
-						.y(function(d) {
-							return yscl(d.long);
-						}))
-				//计算赛道“起/终点”
-
+						.x((d) => this.xscl(d.lat)) // apply the x scale to the x data
+						.y((d) => this.yscl(d.long)))
+				//自动计算赛道“起/终点” trigger
 				var max_idx = d3.scan(this.vob_data, function(a, b) {
 					return b.velocity - a.velocity
 				});
 				var auto_trigger = this.vob_data[max_idx];
-				this.add_trigger_in_path([xscl(auto_trigger.lat), yscl(auto_trigger.long)]);
-				//计算单圈数据
+				this.add_trigger_in_path([this.xscl(auto_trigger.lat), this.yscl(auto_trigger.long)]);
+				//点击赛道预览图可修改赛道trigger
 				path.on("click", (e, d) => {
 					var pointer = d3.pointer(e);
 					this.add_trigger_in_path(pointer);
-
 				});
-				//取最快圈做为赛道预览图
 			},
+			/**
+			 * type [start_end 赛道发车线,sector 赛道分段线] 
+			 */
 			add_trigger_in_path(point, type = "start_end") {
 				var node = d3.select("path").node();
 				var pathLen = node.getTotalLength();
@@ -306,14 +304,14 @@
 				var angle = common.angle(dest, near);
 				//V1中保存一个分割
 				this.triggers.shift();
-				this.triggers.push({
-					x: dest.x,
-					y: dest.y,
-					len: 15,
-					angle: angle,
+
+				var trigger = {
+					p1:common.getRotatePoint(400,{x:dest.x,y:dest.y-15},{x:dest.x,y:dest.y},-angle),
+					p2:common.getRotatePoint(400,{x:dest.x,y:dest.y+15},{x:dest.x,y:dest.y},-angle),
 					type: type,
 					id: this.trigger_id++
-				});
+				};
+				this.triggers.push(trigger);
 				this.render_trigger();
 			},
 			/**
@@ -322,13 +320,19 @@
 			render_trigger() {
 				var trigger = d3.select("svg").select("g").selectAll("line.track_trigger").data(this.triggers, (d) => d.id);
 				trigger.enter().append("line").attr(
-						"x1", (d) => d.x).attr("x2", (d) =>
-						d.x).attr(
-						"y1", (d) => d.y - d.len).attr("y2", (d) => d.y + d.len).attr("transform", (d) => "rotate(" + d.angle +
-						"," + d.x +
-						"," + d.y + ")")
-					.attr("class", (d) => "track_trigger" + " " + d.type);
-				trigger.exit().remove()
+							"x1", (d) => d.p1.x).attr("x2", (d) =>
+							d.p2.x).attr(
+							"y1", (d) => d.p1.y).attr("y2", (d) => d.p2.y)
+						.attr("class", (d) => "track_trigger" + " " + d.type).attr("id", (d) => "tid_"+d.id);	
+				trigger.exit().remove();
+				this.track_laps_vob();
+			},
+			/**
+			 * 计算单圈数据
+			 */
+			track_laps_vob() {
+				//分割成单圈数据，需要将屏幕坐标系数据转为原始数据坐标系后，进行数据对比，通过判断先进线与分割线是否相交触发分割逻辑
+				
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -360,7 +364,7 @@
 <style>
 	.info {
 		box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-
+		min-width: 800px;
 		padding: 15px;
 		margin-bottom: 10px;
 	}
@@ -377,10 +381,11 @@
 		stroke-width: 2;
 	}
 
-	 .start_end {
+	.start_end {
 		stroke: #000000;
 	}
- .sector {
+
+	.sector {
 		stroke: #D91E18;
 	}
 </style>

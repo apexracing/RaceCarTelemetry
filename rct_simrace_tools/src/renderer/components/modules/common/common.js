@@ -18,6 +18,25 @@ export default {
 	 */
 	angle: function(dest, near) {
 		return Math.atan2(dest.y - near.y, dest.x - near.x) * 180 / Math.PI;
+	},
+	/**在屏幕坐标系中，某点point绕点rotate_center旋转angle后的坐标
+	 * @param {Object} row 图像高度
+	 * @param {Object} point
+	 * @param {Object} rotate_center
+	 * @param {Object} angle
+	 */
+	getRotatePoint: function(row, point, rotate_center, angle) {
+		var x1 = point.x;
+		var y1 = row - point.y;
+		var x2 = rotate_center.x;
+		var y2 = row - rotate_center.y;
+		var x = (x1 - x2) * Math.cos(Math.PI / 180.0 * angle) - (y1 - y2) * Math.sin(Math.PI / 180.0 * angle) + x2;
+		var y = (x1 - x2) * Math.sin(Math.PI / 180.0 * angle) + (y1 - y2) * Math.cos(Math.PI / 180.0 * angle) + y2;
+		y = row - y;
+		return {
+			x: x,
+			y: y
+		};
 	}
 
 };
