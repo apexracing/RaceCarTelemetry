@@ -4,12 +4,28 @@ class common {
 	 * @param {Object} p2 线段1 终点
 	 * @param {Object} p3 线段2 起点
 	 * @param {Object} p4 线段2 终点
+	 * @return {Object} 不相交返回false，或返回交点p;
 	 */
 	static isIntersecting(p1, p2, p3, p4) {
 		function CCW(p1, p2, p3) {
-			return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
+			var A = (p3.y - p1.y) * (p2.x - p1.x);
+			var B = (p2.y - p1.y) * (p3.x - p1.x);
+			return (A > B + Number.EPSILON) ? 1 : (A + Number.EPSILON < B) ? -1 : 0;
 		}
-		return (CCW(p1, p3, p4) != CCW(p2, p3, p4)) && (CCW(p1, p2, p3) != CCW(p1, p2, p4));
+		if ((CCW(p1, p3, p4) != CCW(p2, p3, p4)) && (CCW(p1, p2, p3) != CCW(p1, p2, p4))) {
+			var denominator = (p2.y - p1.y) * (p4.x - p3.x) - (p1.x - p2.x) * (p3.y - p4.y);
+			var x = ((p2.x - p1.x) * (p4.x - p3.x) * (p3.y - p1.y) +
+				(p2.y - p1.y) * (p4.x - p3.x) * p1.x -
+				(p4.y - p3.y) * (p2.x - p1.x) * p3.x) / denominator;
+			var y = -((p2.y - p1.y) * (p4.y - p3.y) * (p3.x - p1.x) +
+				(p2.x - p1.x) * (p4.y - p3.y) * p1.y -
+				(p4.x - p3.x) * (p2.y - p1.y) * p3.y) / denominator;
+			return {
+				x: x,
+				y: y
+			}
+		}
+		return false;
 	}
 	/**
 	 * 计算两个坐标点角度
@@ -135,7 +151,7 @@ class gps_utils {
 	 *   const p1 = {lat:51.47788, long:-0.00147};
 	 *   const p2 = destinationPoint(p1,7794, 300.7); // 51.5136°N, 000.0983°W
 	 */
-	static destinationPoint(point,distance, bearing, radius = 6378137) {
+	static destinationPoint(point, distance, bearing, radius = 6378137) {
 		const δ = distance / radius; // angular distance in radians
 		const θ = common.toRadians(bearing);
 
@@ -148,10 +164,13 @@ class gps_utils {
 		const x = Math.cos(δ) - Math.sin(φ1) * sinφ2;
 		const λ2 = λ1 + Math.atan2(y, x);
 
-		const lat =common.toDegrees(φ2);
+		const lat = common.toDegrees(φ2);
 		const lon = common.toDegrees(λ2);
 
-		return {lat:lat, long:lon};
+		return {
+			lat: lat,
+			long: lon
+		};
 	}
 
 }

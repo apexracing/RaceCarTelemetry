@@ -85,7 +85,10 @@
 <script>
 	/* eslint-disable */
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
-	import {common,gps_utils} from '@/components/modules/common/common'
+	import {
+		common,
+		gps_utils
+	} from '@/components/modules/common/common'
 	import moment from 'moment'
 
 	import {
@@ -169,8 +172,11 @@
 			}
 		},
 		methods: {
-			lapsDataClass({row,rowIdx}){
-				 return row.class;
+			lapsDataClass({
+				row,
+				rowIdx
+			}) {
+				return row.class;
 			},
 			//分析vbo文件
 			process_vob(file, loading) {
@@ -376,44 +382,49 @@
 				var found = false,
 					found_idx = 0;
 				for (var i = 0; i < this.vob_data.length - 1; i++) {
-					if (common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
+					var cross=common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
 							x: this.vob_data[i].lat,
 							y: this.vob_data[i].long
 						}, {
 							x: this.vob_data[i + 1].lat,
 							y: this.vob_data[i + 1].long
-						})) {
+						});
+					if (cross) {
+							console.log("计算单圈数据,发现新单圈.两线段交点:%o,数据索引:%d",cross,found_idx)
 						//发现一个单圈数据
 						var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
 						var end = moment(this.vob_data[i].time, "HHmmss.SS");
 						var millsecond = end - begin;
-						if (millsecond > 10000) {
+						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间
+						var estimate = 0;
+						millsecond += estimate;
+						if (millsecond > 20000) {
 							//小于10秒不算单圈
 							this.lapsData.push({
 								beginIdx: found_idx,
 								endIdx: i,
 								lap: this.lapsData.length + 1,
 								laptime: moment.utc(millsecond).format('mm.ss.SS'),
-								class:'row_normal'
+								class: 'row_normal'
 							});
 						}
 						found_idx = i + 1;
 					}
 				}
 				//最后剩余部分数据以灰度显示
-				if(found_idx<this.vob_data.length){
-					//发现一个单圈数据
+				if (found_idx < this.vob_data.length) {
 					var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
-					var end = moment(this.vob_data[this.vob_data.length-1].time, "HHmmss.SS");
+					var end = moment(this.vob_data[this.vob_data.length - 1].time, "HHmmss.SS");
 					var millsecond = end - begin;
-					if (millsecond > 10000) {
+					if (millsecond > 20000) {
 						//小于10秒不算单圈
 						this.lapsData.push({
 							beginIdx: found_idx,
 							endIdx: i,
 							lap: this.lapsData.length + 1,
+							lap_millsecond:millsecond,
 							laptime: moment.utc(millsecond).format('mm.ss.SS'),
-							class:'row_leave'
+							class: 'row_leave'
 						});
 					}
 				}
@@ -472,11 +483,14 @@
 	.sector {
 		stroke: #D91E18;
 	}
-	 .el-table .row_normal {
-	    
-	  }
-	
-	  .el-table .row_leave {
-	    background: #8C939D;
-	  }
+
+	.el-table .row_normal {}
+
+	.el-table .row_best {
+		background: #13CE66;
+	}
+
+	.el-table .row_leave {
+		background: #8C939D;
+	}
 </style>
