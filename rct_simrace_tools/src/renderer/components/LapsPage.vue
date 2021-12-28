@@ -1,7 +1,9 @@
 <template>
 	<el-container>
 		<el-aside width="auto">
-			<el-table :data="lapsData" style="width: 100%;" max-height="400" height="400" border>
+			<el-table :data="lapsData" style="width: 100%;" max-height="550" height="550" border :row-class-name="lapsDataClass">
+				<el-table-column type="selection" width="55">
+				</el-table-column>
 				<el-table-column prop="lap" label="lap" width="80">
 				</el-table-column>
 				<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
@@ -83,7 +85,9 @@
 <script>
 	/* eslint-disable */
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
-	import common from '@/components/modules/common/common'
+	import {common,gps_utils} from '@/components/modules/common/common'
+	import moment from 'moment'
+
 	import {
 		Loading
 	} from 'element-ui';
@@ -165,6 +169,9 @@
 			}
 		},
 		methods: {
+			lapsDataClass({row,rowIdx}){
+				 return row.class;
+			},
 			//分析vbo文件
 			process_vob(file, loading) {
 				console.log('正在分析VBO文件:' + file)
@@ -188,7 +195,14 @@
 							var vob_row_data = {};
 							for (var i in vob_row) {
 								var column_name = this.vob_column[i];
-								vob_row_data[column_name] = parseFloat(vob_row[i]);
+								if (column_name == "time") {
+
+									vob_row_data[column_name] = vob_row[i];
+								} else {
+									vob_row_data[column_name] = parseFloat(vob_row[i]);
+
+								}
+
 							}
 							this.vob_data.push(vob_row_data);
 						}
@@ -306,10 +320,30 @@
 				this.triggers.shift();
 
 				var trigger = {
-					p1:common.getRotatePoint(400,{x:dest.x,y:dest.y-15},{x:dest.x,y:dest.y},-angle),
-					p2:common.getRotatePoint(400,{x:dest.x,y:dest.y+15},{x:dest.x,y:dest.y},-angle),
+					p1: common.getRotatePoint(400, {
+						x: dest.x,
+						y: dest.y - 15
+					}, {
+						x: dest.x,
+						y: dest.y
+					}, -angle),
+					p2: common.getRotatePoint(400, {
+						x: dest.x,
+						y: dest.y + 15
+					}, {
+						x: dest.x,
+						y: dest.y
+					}, -angle),
 					type: type,
 					id: this.trigger_id++
+				};
+				trigger.origin_p1 = {
+					x: this.xscl.invert(trigger.p1.x),
+					y: this.yscl.invert(trigger.p1.y)
+				};
+				trigger.origin_p2 = {
+					x: this.xscl.invert(trigger.p2.x),
+					y: this.yscl.invert(trigger.p2.y)
 				};
 				this.triggers.push(trigger);
 				this.render_trigger();
@@ -320,10 +354,10 @@
 			render_trigger() {
 				var trigger = d3.select("svg").select("g").selectAll("line.track_trigger").data(this.triggers, (d) => d.id);
 				trigger.enter().append("line").attr(
-							"x1", (d) => d.p1.x).attr("x2", (d) =>
-							d.p2.x).attr(
-							"y1", (d) => d.p1.y).attr("y2", (d) => d.p2.y)
-						.attr("class", (d) => "track_trigger" + " " + d.type).attr("id", (d) => "tid_"+d.id);	
+						"x1", (d) => d.p1.x).attr("x2", (d) =>
+						d.p2.x).attr(
+						"y1", (d) => d.p1.y).attr("y2", (d) => d.p2.y)
+					.attr("class", (d) => "track_trigger" + " " + d.type).attr("id", (d) => "tid_" + d.id);
 				trigger.exit().remove();
 				this.track_laps_vob();
 			},
@@ -331,8 +365,58 @@
 			 * 计算单圈数据
 			 */
 			track_laps_vob() {
+				this.lapsData = [];
 				//分割成单圈数据，需要将屏幕坐标系数据转为原始数据坐标系后，进行数据对比，通过判断先进线与分割线是否相交触发分割逻辑
-				
+				var seTrigger = this.triggers.filter((t) => t.type == "start_end"); //起点/终点2合1触发器
+				if (seTrigger.length == 0) {
+					this.$message("没有设置赛道起/终点");
+					return;
+				}
+				seTrigger = seTrigger[0];
+				var found = false,
+					found_idx = 0;
+				for (var i = 0; i < this.vob_data.length - 1; i++) {
+					if (common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
+							x: this.vob_data[i].lat,
+							y: this.vob_data[i].long
+						}, {
+							x: this.vob_data[i + 1].lat,
+							y: this.vob_data[i + 1].long
+						})) {
+						//发现一个单圈数据
+						var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
+						var end = moment(this.vob_data[i].time, "HHmmss.SS");
+						var millsecond = end - begin;
+						if (millsecond > 10000) {
+							//小于10秒不算单圈
+							this.lapsData.push({
+								beginIdx: found_idx,
+								endIdx: i,
+								lap: this.lapsData.length + 1,
+								laptime: moment.utc(millsecond).format('mm.ss.SS'),
+								class:'row_normal'
+							});
+						}
+						found_idx = i + 1;
+					}
+				}
+				//最后剩余部分数据以灰度显示
+				if(found_idx<this.vob_data.length){
+					//发现一个单圈数据
+					var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
+					var end = moment(this.vob_data[this.vob_data.length-1].time, "HHmmss.SS");
+					var millsecond = end - begin;
+					if (millsecond > 10000) {
+						//小于10秒不算单圈
+						this.lapsData.push({
+							beginIdx: found_idx,
+							endIdx: i,
+							lap: this.lapsData.length + 1,
+							laptime: moment.utc(millsecond).format('mm.ss.SS'),
+							class:'row_leave'
+						});
+					}
+				}
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -388,4 +472,11 @@
 	.sector {
 		stroke: #D91E18;
 	}
+	 .el-table .row_normal {
+	    
+	  }
+	
+	  .el-table .row_leave {
+	    background: #8C939D;
+	  }
 </style>
