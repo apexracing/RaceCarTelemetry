@@ -248,7 +248,7 @@
 						.attr('transform', e.transform);
 				}
 				let zoom = d3.zoom()
-					.scaleExtent([1, 5])
+					.scaleExtent([1, 6])
 					.translateExtent([
 						[0, 0],
 						[width, height]
@@ -393,17 +393,23 @@
 							console.log("计算单圈数据,发现新单圈.两线段交点:%o,数据索引:%d",cross,found_idx)
 						//发现一个单圈数据
 						var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
-						var end = moment(this.vob_data[i].time, "HHmmss.SS");
+						var last_vob=this.vob_data[i];
+						var end = moment(last_vob.time, "HHmmss.SS");
 						var millsecond = end - begin;
-						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间
-						var estimate = 0;
-						millsecond += estimate;
+						var distance=gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({lat:last_vob.lat,long:last_vob.long}),gps_utils.convertLatLngToDecimal({lat:cross.x,long:cross.y}));
+						var speed=last_vob.velocity*1000/3600;
+						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间 TODO
+						var estimate = distance/speed;
+						millsecond += estimate*1000;
+						console.log("距离:%f,速度:%f,时间:%f,%f",distance,speed,distance/speed,millsecond)
+						
 						if (millsecond > 20000) {
 							//小于10秒不算单圈
 							this.lapsData.push({
 								beginIdx: found_idx,
 								endIdx: i,
 								lap: this.lapsData.length + 1,
+								millsecond:millsecond,
 								laptime: moment.utc(millsecond).format('mm.ss.SS'),
 								class: 'row_normal'
 							});
@@ -422,12 +428,14 @@
 							beginIdx: found_idx,
 							endIdx: i,
 							lap: this.lapsData.length + 1,
-							lap_millsecond:millsecond,
+							millsecond:millsecond,
 							laptime: moment.utc(millsecond).format('mm.ss.SS'),
 							class: 'row_leave'
 						});
 					}
 				}
+				//最佳成绩显示样式
+				this.lapsData[d3.minIndex(this.lapsData, d => Number(d.millsecond))].class="row_best";
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -473,7 +481,7 @@
 	}
 
 	svg .track_trigger {
-		stroke-width: 2;
+		stroke-width: 1;
 	}
 
 	.start_end {

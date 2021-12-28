@@ -70,6 +70,38 @@ class common {
 	}
 }
 class gps_utils {
+	//以下函数参考http://www.movable-type.co.uk/scripts/latlong.html
+	static wrap90(degrees) {
+		if (-90 <= degrees && degrees <= 90) return degrees; // avoid rounding due to arithmetic ops if within range
+	
+		// latitude wrapping requires a triangle wave function; a general triangle wave is
+		//     f(x) = 4a/p ⋅ | (x-p/4)%p - p/2 | - a
+		// where a = amplitude, p = period, % = modulo; however, JavaScript '%' is a remainder operator
+		// not a modulo operator - for modulo, replace 'x%n' with '((x%n)+n)%n'
+		const x = degrees,
+			a = 90,
+			p = 360;
+		return 4 * a / p * Math.abs((((x - p / 4) % p) + p) % p - p / 2) - a;
+	}
+	/**
+	 * Constrain degrees to range -180..+180 (for longitude); e.g. -181 => 179, 181 => -179.
+	 *
+	 * @private
+	 * @param {number} degrees
+	 * @returns degrees within range -180..+180.
+	 */
+	static wrap180(degrees) {
+		if (-180 <= degrees && degrees <= 180) return degrees; // avoid rounding due to arithmetic ops if within range
+	
+		// longitude wrapping requires a sawtooth wave function; a general sawtooth wave is
+		//     f(x) = (2ax/p - p/2) % p - a
+		// where a = amplitude, p = period, % = modulo; however, JavaScript '%' is a remainder operator
+		// not a modulo operator - for modulo, replace 'x%n' with '((x%n)+n)%n'
+		const x = degrees,
+			a = 180,
+			p = 360;
+		return (((2 * a * x / p - p / 2) % p) + p) % p - a;
+	}
 	/** 将vbo文件中的MMMMM.MMMMM格式转成十进制地图经纬度坐标
 	 * @param {Object} mmm  
 	 */
@@ -88,42 +120,11 @@ class gps_utils {
 		if (long == Infinity) return null;
 		if (long == null) return null;
 		return {
-			lat: wrap90(lat / 60),
-			long: this.wrap180(long / 60)
+			lat: gps_utils.wrap90(lat / 60),
+			long: gps_utils.wrap180(long / 60)
 		};
 	}
-	//以下函数参考http://www.movable-type.co.uk/scripts/latlong.html
-	static wrap90(degrees) {
-		if (-90 <= degrees && degrees <= 90) return degrees; // avoid rounding due to arithmetic ops if within range
-
-		// latitude wrapping requires a triangle wave function; a general triangle wave is
-		//     f(x) = 4a/p ⋅ | (x-p/4)%p - p/2 | - a
-		// where a = amplitude, p = period, % = modulo; however, JavaScript '%' is a remainder operator
-		// not a modulo operator - for modulo, replace 'x%n' with '((x%n)+n)%n'
-		const x = degrees,
-			a = 90,
-			p = 360;
-		return 4 * a / p * Math.abs((((x - p / 4) % p) + p) % p - p / 2) - a;
-	}
-	/**
-	 * Constrain degrees to range -180..+180 (for longitude); e.g. -181 => 179, 181 => -179.
-	 *
-	 * @private
-	 * @param {number} degrees
-	 * @returns degrees within range -180..+180.
-	 */
-	static wrap90(degrees) {
-		if (-180 <= degrees && degrees <= 180) return degrees; // avoid rounding due to arithmetic ops if within range
-
-		// longitude wrapping requires a sawtooth wave function; a general sawtooth wave is
-		//     f(x) = (2ax/p - p/2) % p - a
-		// where a = amplitude, p = period, % = modulo; however, JavaScript '%' is a remainder operator
-		// not a modulo operator - for modulo, replace 'x%n' with '((x%n)+n)%n'
-		const x = degrees,
-			a = 180,
-			p = 360;
-		return (((2 * a * x / p - p / 2) % p) + p) % p - a;
-	}
+	
 	/**
 	 * 两个经纬度坐标距离,单位(米)
 	 */
