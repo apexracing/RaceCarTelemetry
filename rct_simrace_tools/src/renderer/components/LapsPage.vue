@@ -295,7 +295,6 @@
 			add_trigger_in_path(point, type = "start_end") {
 				var node = d3.select("path").node();
 				var pathLen = node.getTotalLength();
-				console.log(pathLen)
 				var distanceall = [];
 				//粗略查询
 				for (var i = 0; i < pathLen; i += 20) {
@@ -492,7 +491,9 @@
 	svg .track_trigger {
 		stroke-width: 2;
 	}
-
+	svg path{
+		stroke-width: 1;
+	}
 	.start_end {
 		stroke: #000000;
 	}
