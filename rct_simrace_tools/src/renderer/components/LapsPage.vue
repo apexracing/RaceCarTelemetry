@@ -104,6 +104,7 @@
 		name: 'laps-page',
 		data() {
 			return {
+				zoom: 10,
 				xscl: undefined,
 				yscl: undefined,
 				trackerPlayer: 0,
@@ -229,10 +230,10 @@
 			 */
 			render_track_vob() {
 				var margin = {
-						top: 20,
-						right: 20,
-						bottom: 20,
-						left: 20
+						top: 15,
+						right: 15,
+						bottom: 15,
+						left: 15
 					},
 					width = 400 - margin.left - margin.right,
 					height = 400 - margin.top - margin.bottom;
@@ -248,23 +249,24 @@
 						.attr('transform', e.transform);
 				}
 				let zoom = d3.zoom()
-					.scaleExtent([1, 6])
+					.scaleExtent([1/this.zoom,5])
 					.translateExtent([
 						[0, 0],
-						[width, height]
+						[width * this.zoom, height * this.zoom]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
+				svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left,margin.right).scale(1/this.zoom*2))
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.lat;
 					})) //use just the x part
-					.range([0, width])
+					.range([0, width * this.zoom])
 
 				this.yscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.long;
 					})) // use just the y part
-					.range([height, 0])
+					.range([height * this.zoom, 0])
 
 
 				var path = g.append("path")
@@ -293,6 +295,7 @@
 			add_trigger_in_path(point, type = "start_end") {
 				var node = d3.select("path").node();
 				var pathLen = node.getTotalLength();
+				console.log(pathLen)
 				var distanceall = [];
 				//粗略查询
 				for (var i = 0; i < pathLen; i += 20) {
@@ -326,16 +329,16 @@
 				this.triggers.shift();
 
 				var trigger = {
-					p1: common.getRotatePoint(400, {
+					p1: common.getRotatePoint(400 * this.zoom, {
 						x: dest.x,
-						y: dest.y - 15
+						y: dest.y - 15 * this.zoom
 					}, {
 						x: dest.x,
 						y: dest.y
 					}, -angle),
-					p2: common.getRotatePoint(400, {
+					p2: common.getRotatePoint(400 * this.zoom, {
 						x: dest.x,
-						y: dest.y + 15
+						y: dest.y + 15 * this.zoom
 					}, {
 						x: dest.x,
 						y: dest.y
@@ -382,34 +385,40 @@
 				var found = false,
 					found_idx = 0;
 				for (var i = 0; i < this.vob_data.length - 1; i++) {
-					var cross=common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
-							x: this.vob_data[i].lat,
-							y: this.vob_data[i].long
-						}, {
-							x: this.vob_data[i + 1].lat,
-							y: this.vob_data[i + 1].long
-						});
+					var cross = common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
+						x: this.vob_data[i].lat,
+						y: this.vob_data[i].long
+					}, {
+						x: this.vob_data[i + 1].lat,
+						y: this.vob_data[i + 1].long
+					});
 					if (cross) {
-							console.log("计算单圈数据,发现新单圈.两线段交点:%o,数据索引:%d",cross,found_idx)
+						console.log("计算单圈数据,发现新单圈.两线段交点:%o,数据索引:%d", cross, found_idx)
 						//发现一个单圈数据
 						var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
-						var last_vob=this.vob_data[i];
+						var last_vob = this.vob_data[i];
 						var end = moment(last_vob.time, "HHmmss.SS");
 						var millsecond = end - begin;
-						var distance=gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({lat:last_vob.lat,long:last_vob.long}),gps_utils.convertLatLngToDecimal({lat:cross.x,long:cross.y}));
-						var speed=last_vob.velocity*1000/3600;
+						var distance = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
+							lat: last_vob.lat,
+							long: last_vob.long
+						}), gps_utils.convertLatLngToDecimal({
+							lat: cross.x,
+							long: cross.y
+						}));
+						var speed = last_vob.velocity * 1000 / 3600;
 						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间 TODO
-						var estimate = distance/speed;
-						millsecond += estimate*1000;
-						console.log("距离:%f,速度:%f,时间:%f,%f",distance,speed,distance/speed,millsecond)
-						
+						var estimate = distance / speed;
+						millsecond += estimate * 1000;
+						console.log("距离:%f,速度:%f,时间:%f,%f", distance, speed, distance / speed, millsecond)
+
 						if (millsecond > 20000) {
 							//小于10秒不算单圈
 							this.lapsData.push({
 								beginIdx: found_idx,
 								endIdx: i,
 								lap: this.lapsData.length + 1,
-								millsecond:millsecond,
+								millsecond: millsecond,
 								laptime: moment.utc(millsecond).format('mm.ss.SS'),
 								class: 'row_normal'
 							});
@@ -428,14 +437,14 @@
 							beginIdx: found_idx,
 							endIdx: i,
 							lap: this.lapsData.length + 1,
-							millsecond:millsecond,
+							millsecond: millsecond,
 							laptime: moment.utc(millsecond).format('mm.ss.SS'),
 							class: 'row_leave'
 						});
 					}
 				}
 				//最佳成绩显示样式
-				this.lapsData[d3.minIndex(this.lapsData, d => Number(d.millsecond))].class="row_best";
+				this.lapsData[d3.minIndex(this.lapsData, d => Number(d.millsecond))].class = "row_best";
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -481,7 +490,7 @@
 	}
 
 	svg .track_trigger {
-		stroke-width: 1;
+		stroke-width: 2;
 	}
 
 	.start_end {
