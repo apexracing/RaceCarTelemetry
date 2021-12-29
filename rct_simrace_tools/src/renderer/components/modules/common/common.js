@@ -68,12 +68,24 @@ class common {
 			y: y
 		};
 	}
+	/**
+	 * 线性插值计算
+	 * @param {Object} x
+	 * @param {Object} x_arr
+	 * @param {Object} y_arr
+	 */
+	static lineInterpolationInvert(x, x_arr, y_arr) {
+		if (isNaN(x)) return null;
+		if (!Array.isArray(x_arr) || x_arr.length != 2) throw new TypeError(`invalid x_arr ‘${x_arr}’`);
+		if (!Array.isArray(y_arr) || y_arr.length != 2) throw new TypeError(`invalid x_arr ‘${y_arr}’`);
+		return ((x_arr[1] - x) / (x_arr[1] - x_arr[0])) * y_arr[0] + ((x - x_arr[0]) / (x_arr[1] - x_arr[0])) * y_arr[1];
+	}
 }
 class gps_utils {
 	//以下函数参考http://www.movable-type.co.uk/scripts/latlong.html
 	static wrap90(degrees) {
 		if (-90 <= degrees && degrees <= 90) return degrees; // avoid rounding due to arithmetic ops if within range
-	
+
 		// latitude wrapping requires a triangle wave function; a general triangle wave is
 		//     f(x) = 4a/p ⋅ | (x-p/4)%p - p/2 | - a
 		// where a = amplitude, p = period, % = modulo; however, JavaScript '%' is a remainder operator
@@ -92,7 +104,7 @@ class gps_utils {
 	 */
 	static wrap180(degrees) {
 		if (-180 <= degrees && degrees <= 180) return degrees; // avoid rounding due to arithmetic ops if within range
-	
+
 		// longitude wrapping requires a sawtooth wave function; a general sawtooth wave is
 		//     f(x) = (2ax/p - p/2) % p - a
 		// where a = amplitude, p = period, % = modulo; however, JavaScript '%' is a remainder operator
@@ -124,7 +136,7 @@ class gps_utils {
 			long: gps_utils.wrap180(long / 60)
 		};
 	}
-	
+
 	/**
 	 * 两个经纬度坐标距离,单位(米)
 	 */

@@ -249,13 +249,13 @@
 						.attr('transform', e.transform);
 				}
 				let zoom = d3.zoom()
-					.scaleExtent([1/this.zoom,5])
+					.scaleExtent([1 / this.zoom, 5])
 					.translateExtent([
 						[0, 0],
 						[width * this.zoom, height * this.zoom]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
-				svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left,margin.right).scale(1/this.zoom*2))
+				svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.right).scale(1 / this.zoom * 2))
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.lat;
@@ -384,36 +384,45 @@
 					return;
 				}
 				seTrigger = seTrigger[0];
-				var found = false,
-					found_idx = 0;
+				var 	found_idx = 0;
+				var last_millsecond =  moment(this.vob_data[found_idx].time, "HHmmss.SS");
 				for (var i = 0; i < this.vob_data.length - 1; i++) {
+					var current_vob = this.vob_data[i];
+					var next_vob = this.vob_data[i + 1];
 					var cross = common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
-						x: this.vob_data[i].lat,
-						y: this.vob_data[i].long
+						x: current_vob.lat,
+						y: current_vob.long
 					}, {
-						x: this.vob_data[i + 1].lat,
-						y: this.vob_data[i + 1].long
+						x: next_vob.lat,
+						y: next_vob.long
 					});
 					if (cross) {
 						console.log("计算单圈数据,发现新单圈.两线段交点:%o,数据索引:%d", cross, found_idx)
 						//发现一个单圈数据
-						var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
-						var last_vob = this.vob_data[i];
-						var end = moment(last_vob.time, "HHmmss.SS");
-						var millsecond = end - begin;
-						var distance = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
-							lat: last_vob.lat,
-							long: last_vob.long
+						var timeCurrent = moment(current_vob.time, "HHmmss.SS").valueOf();//实际采样点单圈结束时间
+						var timeNext = moment(next_vob.time, "HHmmss.SS").valueOf();//实际采样点单圈结束时间
+						
+						var distanceVob = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
+							lat: current_vob.lat,
+							long: current_vob.long
+						}), gps_utils.convertLatLngToDecimal({
+							lat: next_vob.lat,
+							long: next_vob.long
+						}))
+						var distanceCross = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
+							lat: current_vob.lat,
+							long: current_vob.long
 						}), gps_utils.convertLatLngToDecimal({
 							lat: cross.x,
 							long: cross.y
 						}));
-						var speed = last_vob.velocity * 1000 / 3600;
-						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间 TODO
-						var estimate = distance / speed;
-						millsecond += estimate * 1000;
-						console.log("距离:%f,速度:%f,时间:%f,%f", distance, speed, distance / speed, millsecond)
-
+							//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间,距离->速度，速度->时间
+						var velocityCross=common.lineInterpolationInvert(distanceCross,[0,distanceVob],[current_vob.velocity,next_vob.velocity]);
+						var end=common.lineInterpolationInvert(velocityCross,[current_vob.velocity,next_vob.velocity],[timeCurrent,timeNext]);
+			
+						console.log("预估结束时间:%f,采样点结束时间:%s,到终点距离:%f米,采样点瞬时速度:%f", end,timeCurrent,distanceCross,current_vob.velocity)
+						var millsecond=end-last_millsecond;
+						last_millsecond = end;
 						if (millsecond > 20000) {
 							//小于10秒不算单圈
 							this.lapsData.push({
@@ -421,7 +430,7 @@
 								endIdx: i,
 								lap: this.lapsData.length + 1,
 								millsecond: millsecond,
-								laptime: moment.utc(millsecond).format('mm.ss.SS'),
+								laptime: moment.utc(Math.ceil(millsecond)).format('mm.ss.SS'),
 								class: 'row_normal'
 							});
 						}
@@ -430,9 +439,8 @@
 				}
 				//最后剩余部分数据以灰度显示
 				if (found_idx < this.vob_data.length) {
-					var begin = moment(this.vob_data[found_idx].time, "HHmmss.SS");
 					var end = moment(this.vob_data[this.vob_data.length - 1].time, "HHmmss.SS");
-					var millsecond = end - begin;
+					var millsecond = end -last_millsecond;
 					if (millsecond > 20000) {
 						//小于10秒不算单圈
 						this.lapsData.push({
@@ -494,10 +502,12 @@
 	svg .track_trigger {
 		stroke-width: 2;
 	}
-	svg path{
+
+	svg path {
 		stroke-width: 2;
 		stroke: green;
 	}
+
 	.start_end {
 		stroke: #000000;
 	}
