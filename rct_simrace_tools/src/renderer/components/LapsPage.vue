@@ -104,7 +104,7 @@
 		name: 'laps-page',
 		data() {
 			return {
-				zoom: 10,
+				zoom: 15, //地图最大细节倍数
 				xscl: undefined,
 				yscl: undefined,
 				trackerPlayer: 0,
@@ -272,8 +272,6 @@
 				var path = g.append("path")
 					.datum(this.vob_data)
 					.attr("fill", "none")
-					.attr("stroke", "green")
-					.attr("stroke-width", 2)
 					.attr("d", d3.line()
 						.x((d) => this.xscl(d.lat)) // apply the x scale to the x data
 						.y((d) => this.yscl(d.long)))
@@ -492,7 +490,8 @@
 		stroke-width: 2;
 	}
 	svg path{
-		stroke-width: 1;
+		stroke-width: 2;
+		stroke: green;
 	}
 	.start_end {
 		stroke: #000000;
@@ -505,10 +504,10 @@
 	.el-table .row_normal {}
 
 	.el-table .row_best {
-		background: #13CE66;
+		background: #67C23A;
 	}
 
 	.el-table .row_leave {
-		background: #8C939D;
+		background: #909399;
 	}
 </style>
