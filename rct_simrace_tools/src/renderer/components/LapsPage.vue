@@ -291,6 +291,10 @@
 			 * type [start_end 赛道发车线,sector 赛道分段线] 
 			 */
 			add_trigger_in_path(point, type = "start_end") {
+				var loadingInstance = Loading.service({
+					fullscreen: true,
+					'text': 'analyse lap times ...'
+				});
 				var node = d3.select("path").node();
 				var pathLen = node.getTotalLength();
 				var distanceall = [];
@@ -353,6 +357,7 @@
 				};
 				this.triggers.push(trigger);
 				this.render_trigger();
+				loadingInstance.close();
 			},
 			/**
 			 * 画赛道分割线
