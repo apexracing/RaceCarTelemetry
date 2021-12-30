@@ -1,3 +1,5 @@
+import * as d3 from 'd3/dist/d3'
+
 class common {
 	/** 判断两条直线是否有交点
 	 * @param {Object} p1 线段1 起点
@@ -75,10 +77,25 @@ class common {
 	 * @param {Object} y_arr
 	 */
 	static lineInterpolationInvert(x, x_arr, y_arr) {
+		if(x_arr[1]<=x_arr[0]) throw new TypeError(`invalid x_arr ‘${x_arr[1]}<=${x_arr[0]}’`)
 		if (isNaN(x)) return null;
 		if (!Array.isArray(x_arr) || x_arr.length != 2) throw new TypeError(`invalid x_arr ‘${x_arr}’`);
 		if (!Array.isArray(y_arr) || y_arr.length != 2) throw new TypeError(`invalid x_arr ‘${y_arr}’`);
 		return ((x_arr[1] - x) / (x_arr[1] - x_arr[0])) * y_arr[0] + ((x - x_arr[0]) / (x_arr[1] - x_arr[0])) * y_arr[1];
+	}
+	/**
+	 * 离群算法，去除G力嗓点3sigma法
+	 */
+	static three_sigma(dataset,field,n=3){
+		//均值
+		var mean=d3.mean(dataset,(d)=>d[field]);
+		//全局标准差
+		var sigma =d3.deviation(dataset,(d)=>d[field]);
+		console.log(mean)
+		var newDataset=dataset.filter(function(d){
+			return Math.abs(d[field] - mean) > n * sigma
+		});
+		return newDataset;
 	}
 }
 class gps_utils {

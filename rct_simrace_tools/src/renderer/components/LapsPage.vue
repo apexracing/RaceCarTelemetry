@@ -1,9 +1,8 @@
 <template>
 	<el-container>
 		<el-aside width="auto">
-			<el-table :data="lapsData" style="width: 100%;" max-height="550" height="550" border :row-class-name="lapsDataClass">
-				<el-table-column type="selection" width="55">
-				</el-table-column>
+			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" max-height="550" height="550" border :row-class-name="lapsDataClass"
+			 @current-change="lapsSelection" highlight-current-row>
 				<el-table-column prop="lap" label="lap" width="80">
 				</el-table-column>
 				<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
@@ -24,30 +23,6 @@
 		<el-container>
 			<el-header>
 				<div class="info">
-
-					<el-row type="flex" align="middle">
-						<el-col :span="24">
-							<el-descriptions>
-								<el-descriptions-item label="Driver">nick</el-descriptions-item>
-								<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
-								<el-descriptions-item label="Track">XIC</el-descriptions-item>
-							</el-descriptions>
-							<el-descriptions :column="6" border v-if="realtime_show">
-								<el-descriptions-item label="speed">265km/h</el-descriptions-item>
-								<el-descriptions-item label="throttle">%</el-descriptions-item>
-								<el-descriptions-item label="brake">100%</el-descriptions-item>
-								<el-descriptions-item label="clutch">55%</el-descriptions-item>
-								<el-descriptions-item label="rpm">7200</el-descriptions-item>
-								<el-descriptions-item label="gear">5</el-descriptions-item>
-								<el-descriptions-item label="steer">32</el-descriptions-item>
-								<el-descriptions-item label="G_V">1.5G</el-descriptions-item>
-								<el-descriptions-item label="G_H">0.l8G</el-descriptions-item>
-								<el-descriptions-item label="lapTime">1.45.323</el-descriptions-item>
-							</el-descriptions>
-						</el-col>
-
-					</el-row>
-
 					<div class="play">
 						<el-row>
 							<el-col :span="8">
@@ -71,10 +46,41 @@
 							</el-col>
 						</el-row>
 					</div>
+					<el-row type="flex" align="middle" justify="space-between">
+						<el-col :span="24">
+							<el-descriptions>
+								<el-descriptions-item label="Driver">nick</el-descriptions-item>
+								<el-descriptions-item label="Car">AMG GT3</el-descriptions-item>
+								<el-descriptions-item label="Track">XIC</el-descriptions-item>
+							</el-descriptions>
+							<el-descriptions :column="6" border v-if="realtime_show">
+								<el-descriptions-item label="speed">265km/h</el-descriptions-item>
+								<el-descriptions-item label="throttle">%</el-descriptions-item>
+								<el-descriptions-item label="brake">100%</el-descriptions-item>
+								<el-descriptions-item label="clutch">55%</el-descriptions-item>
+								<el-descriptions-item label="rpm">7200</el-descriptions-item>
+								<el-descriptions-item label="gear">5</el-descriptions-item>
+								<el-descriptions-item label="steer">32</el-descriptions-item>
+								<el-descriptions-item label="G_V">1.5G</el-descriptions-item>
+								<el-descriptions-item label="G_H">0.l8G</el-descriptions-item>
+								<el-descriptions-item label="lapTime">1.45.323</el-descriptions-item>
+							</el-descriptions>
+						</el-col>
+					</el-row>
+				</div>
+				<div>
+					<el-row>
+						<el-col :span="6">
+							<div id="gg_map">
+								<svg width="400" height="400" style="border:#EBEEF5 solid 1px;">
+									<g></g>
+								</svg>
+							</div>
+						</el-col>
+					</el-row>
 				</div>
 			</el-header>
 			<el-main>
-
 
 			</el-main>
 		</el-container>
@@ -107,6 +113,9 @@
 				zoom: 15, //地图最大细节倍数
 				xscl: undefined,
 				yscl: undefined,
+				ggmap_xScale:undefined,
+				ggmap_yScale:undefined,
+				ggmap_color:undefined,
 				trackerPlayer: 0,
 				triggers: [],
 				trigger_id: 0,
@@ -114,10 +123,11 @@
 				vob_data: [],
 				realtime_show: true,
 				sector_show: false,
-				lapsData: []
+				lapsData: [],
+				lap_selection: null
 			}
 		},
-		created() {
+		mounted() {
 			switch (this.$route.params.deviceId) {
 				case 'ac':
 					{
@@ -195,7 +205,23 @@
 						section = line;
 					} else if (line.length > 0) {
 						if (section == "[column names]") {
-							this.vob_column = line.trim().split(" ");
+							var columns = line.trim().split(" ");
+							this.vob_column=columns.map(function(d){
+								//适配harry'laptimer和Racechrono导出的vbo文件
+							  if(d=="longacc"){
+							    return "acc_x"
+							  }
+								if(d=="latacc"){
+								  return "acc_y"
+								}
+								if(d=="x_acc-acc"){
+								  return "acc_x"
+								}
+								if(d=="y_acc-acc"){
+								  return "acc_y"
+								}
+							  return d;
+							})
 						}
 						if (section == "[data]") {
 							var vob_row = line.trim().split(" ");
@@ -203,11 +229,9 @@
 							for (var i in vob_row) {
 								var column_name = this.vob_column[i];
 								if (column_name == "time") {
-
 									vob_row_data[column_name] = vob_row[i];
 								} else {
 									vob_row_data[column_name] = parseFloat(vob_row[i]);
-
 								}
 
 							}
@@ -258,6 +282,7 @@
 				svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.right).scale(1 / this.zoom * 2))
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
+						
 						return d.lat;
 					})) //use just the x part
 					.range([0, width * this.zoom])
@@ -384,8 +409,9 @@
 					return;
 				}
 				seTrigger = seTrigger[0];
-				var 	found_idx = 0;
-				var last_millsecond =  moment(this.vob_data[found_idx].time, "HHmmss.SS");
+				var found_idx = 0;
+				var begin_trigger=false,end_trigger=false;
+				var last_millsecond = 0;//moment(this.vob_data[found_idx].time, "HHmmss.SS");
 				for (var i = 0; i < this.vob_data.length - 1; i++) {
 					var current_vob = this.vob_data[i];
 					var next_vob = this.vob_data[i + 1];
@@ -397,11 +423,11 @@
 						y: next_vob.long
 					});
 					if (cross) {
-						console.log("计算单圈数据,发现新单圈.两线段交点:%o,数据索引:%d", cross, found_idx)
+						console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross,seTrigger,current_vob,next_vob, i)
 						//发现一个单圈数据
-						var timeCurrent = moment(current_vob.time, "HHmmss.SS").valueOf();//实际采样点单圈结束时间
-						var timeNext = moment(next_vob.time, "HHmmss.SS").valueOf();//实际采样点单圈结束时间
-						
+						var timeCurrent = moment(current_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
+						var timeNext = moment(next_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
+
 						var distanceVob = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
 							lat: current_vob.lat,
 							long: current_vob.long
@@ -416,31 +442,39 @@
 							lat: cross.x,
 							long: cross.y
 						}));
-							//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间,距离->速度，速度->时间
-						var velocityCross=common.lineInterpolationInvert(distanceCross,[0,distanceVob],[current_vob.velocity,next_vob.velocity]);
-						var end=common.lineInterpolationInvert(velocityCross,[current_vob.velocity,next_vob.velocity],[timeCurrent,timeNext]);
-			
-						console.log("预估结束时间:%f,采样点结束时间:%s,到终点距离:%f米,采样点瞬时速度:%f", end,timeCurrent,distanceCross,current_vob.velocity)
-						var millsecond=end-last_millsecond;
-						last_millsecond = end;
-						if (millsecond > 20000) {
-							//小于10秒不算单圈
-							this.lapsData.push({
-								beginIdx: found_idx,
-								endIdx: i,
-								lap: this.lapsData.length + 1,
-								millsecond: millsecond,
-								laptime: moment.utc(Math.ceil(millsecond)).format('mm.ss.SS'),
-								class: 'row_normal'
-							});
+						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间,距离->速度，距离/速度(km/h)*3600
+						var velocityCross = common.lineInterpolationInvert(distanceCross, [0, distanceVob], [current_vob.velocity,
+							next_vob.velocity
+						]);
+						var end = timeCurrent+distanceCross/velocityCross*3600;
+						if(!begin_trigger){
+							begin_trigger=true;
+							last_millsecond = end;
+						}else{
+							var millsecond = end - last_millsecond;
+							if (millsecond > 20000) {
+								//小于10秒不算单圈
+								this.lapsData.push({
+									beginIdx: found_idx,
+									endIdx: i,
+									lap: this.lapsData.length + 1,
+									millsecond: millsecond,
+									laptime: moment.utc(Math.ceil(millsecond)).format('mm.ss.SS'),
+									class: 'row_normal'
+								});
+								last_millsecond=end;
+							}else{
+									continue;
+							}
 						}
-						found_idx = i + 1;
+						found_idx=i;
+						console.log("预估结束时间:%f,采样点结束时间:%s,到终点距离:%f米,采样点瞬时速度:%f", end, timeCurrent, distanceCross, current_vob.velocity)
 					}
 				}
 				//最后剩余部分数据以灰度显示
 				if (found_idx < this.vob_data.length) {
 					var end = moment(this.vob_data[this.vob_data.length - 1].time, "HHmmss.SS");
-					var millsecond = end -last_millsecond;
+					var millsecond = end - last_millsecond;
 					if (millsecond > 20000) {
 						//小于10秒不算单圈
 						this.lapsData.push({
@@ -454,7 +488,74 @@
 					}
 				}
 				//最佳成绩显示样式
-				this.lapsData[d3.minIndex(this.lapsData, d => Number(d.millsecond))].class = "row_best";
+				var bestLap = d3.minIndex(this.lapsData, d => Number(d.millsecond))
+				this.lapsData[bestLap].class = "row_best";
+				this.init_xyplot_vob();
+				this.render_xyplot_vob(this.lapsData[bestLap]);
+				/* this.$nextTick(function () {
+					this.$refs.lapTable.setCurrentRow(this.lapsData[bestLap]);
+				}) */
+
+			},
+			lapsSelection(lap) {
+				//this.lap_selection = lap;
+				//this.render_xyplot_vob(lap);
+			},
+			init_xyplot_vob() {
+				var margin = {
+					top: 5,
+					right: 5,
+					bottom: 5,
+					left: 5
+				};
+				var svg = d3.select("#gg_map svg");
+				var width = svg.attr("width") - margin.left - margin.right;
+				var height = svg.attr('height') - margin.top - margin.bottom;
+				var g = svg.select("g")
+					.attr("transform",
+						"translate(" + margin.left + "," + margin.top + ")");
+					
+				this.ggmap_xScale = d3.scaleLinear()
+					.domain([-1.5,1.5])
+					.range([0, width])
+				this.ggmap_yScale = d3.scaleLinear()
+					.domain([-1.5,1.5])
+					.range([height, 0])
+				this.ggmap_color = d3.scaleOrdinal()
+					.domain([-2, 2])
+					.range(["#F8766D", "#00BA38"])
+				// 定义X轴  
+				var xAxis = d3.axisBottom()
+					.scale(this.ggmap_xScale)
+					.ticks(11)
+				// 定义Y轴  
+				var yAxis = d3.axisLeft()
+					.scale(this.ggmap_yScale)
+					.ticks(11)
+				// 创建X轴, svg中： g元素是一个分组元素  
+				g.append('g')
+					.attr('class', 'axis')
+					.attr("transform", "translate(0," + 0.5 * height + ")") // 平移到水平中间
+					.call(xAxis);
+				// 创建Y轴  
+				g.append('g')
+					.attr('class', 'axis')
+					.attr("transform", "translate(" + 0.5 * width + ",0)") // 平移到竖直中间
+					.call(yAxis);
+			},
+			/**
+			 * 渲染抓地力圆图
+			 * @param {type} lap 要渲染的lapdata
+			 */
+			render_xyplot_vob(lap) {
+				var ggMap = d3.select("#gg_map svg g").selectAll("dot").data(this.vob_data);
+				ggMap.enter()
+					.append("circle")
+					.attr("cx", (d)=> this.ggmap_xScale(d.acc_y))
+					.attr("cy", (d)=> this.ggmap_yScale(d.acc_x))
+					.attr("r", 1)
+					.style("fill", (d)=> this.ggmap_color(d.acc_x));
+					ggMap.exit().remove();
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
