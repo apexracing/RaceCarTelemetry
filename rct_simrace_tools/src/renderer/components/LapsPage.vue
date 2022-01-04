@@ -233,14 +233,21 @@
 								} else {
 									vob_row_data[column_name] = parseFloat(vob_row[i]);
 								}
-
 							}
+							//通过GPS计算gps加速度通道数据gps_longacc,gps_latacc
+							var latlong=gps_utils.convertLatLngToDecimal({lat:vob_row_data["lat"],long:vob_row_data["long"]})
+							vob_row_data["lat"]=latlong.lat;
+							vob_row_data["long"]=-latlong.long;
+							var xy=gps_utils.toEarthCoordinate(vob_row_data);
+							vob_row_data["x"]=xy.x;
+							vob_row_data["y"]=xy.y;
 							this.vob_data.push(vob_row_data);
 						}
 					}
 				});
 				objReadline.on('close', () => {
 					console.log("VOB文件分析完成")
+					console.log(this.vob_data)
 					this.render_track_vob();
 					//console.log(this.vob_column);
 					//console.log(this.vob_data);
@@ -283,13 +290,13 @@
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						
-						return d.lat;
+						return d.long;
 					})) //use just the x part
 					.range([0, width * this.zoom])
 
 				this.yscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
-						return d.long;
+						return d.lat;
 					})) // use just the y part
 					.range([height * this.zoom, 0])
 
@@ -298,14 +305,14 @@
 					.datum(this.vob_data)
 					.attr("fill", "none")
 					.attr("d", d3.line()
-						.x((d) => this.xscl(d.lat)) // apply the x scale to the x data
-						.y((d) => this.yscl(d.long)))
+						.x((d) => this.xscl(d.long)) // apply the x scale to the x data
+						.y((d) => this.yscl(d.lat)))
 				//自动计算赛道“起/终点” trigger
 				var max_idx = d3.scan(this.vob_data, function(a, b) {
 					return b.velocity - a.velocity
 				});
 				var auto_trigger = this.vob_data[max_idx];
-				this.add_trigger_in_path([this.xscl(auto_trigger.lat), this.yscl(auto_trigger.long)]);
+				this.add_trigger_in_path([this.xscl(auto_trigger.long), this.yscl(auto_trigger.lat)]);
 				//点击赛道预览图可修改赛道trigger
 				path.on("click", (e, d) => {
 					var pointer = d3.pointer(e);
@@ -416,11 +423,11 @@
 					var current_vob = this.vob_data[i];
 					var next_vob = this.vob_data[i + 1];
 					var cross = common.isIntersecting(seTrigger.origin_p1, seTrigger.origin_p2, {
-						x: current_vob.lat,
-						y: current_vob.long
+						x: current_vob.long,
+						y: current_vob.lat
 					}, {
-						x: next_vob.lat,
-						y: next_vob.long
+						x: next_vob.long,
+						y: next_vob.lat
 					});
 					if (cross) {
 						console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross,seTrigger,current_vob,next_vob, i)
@@ -428,25 +435,13 @@
 						var timeCurrent = moment(current_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
 						var timeNext = moment(next_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
 
-						var distanceVob = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
-							lat: current_vob.lat,
-							long: current_vob.long
-						}), gps_utils.convertLatLngToDecimal({
-							lat: next_vob.lat,
-							long: next_vob.long
-						}))
-						var distanceCross = gps_utils.distanceTo(gps_utils.convertLatLngToDecimal({
-							lat: current_vob.lat,
-							long: current_vob.long
-						}), gps_utils.convertLatLngToDecimal({
-							lat: cross.x,
-							long: cross.y
-						}));
-						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间,距离->速度，距离/速度(km/h)*3600
+						var distanceVob = gps_utils.distanceTo(current_vob, next_vob)
+						var distanceCross = gps_utils.distanceTo(current_vob, {lat: cross.y,long: cross.x});
+						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间,距离->速度，距离/速度(km/h)
 						var velocityCross = common.lineInterpolationInvert(distanceCross, [0, distanceVob], [current_vob.velocity,
 							next_vob.velocity
 						]);
-						var end = timeCurrent+distanceCross/velocityCross*3600;
+						var end = timeCurrent+distanceCross/(velocityCross*1000/3600)*1000;
 						if(!begin_trigger){
 							begin_trigger=true;
 							last_millsecond = end;

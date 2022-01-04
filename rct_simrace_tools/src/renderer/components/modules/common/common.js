@@ -202,6 +202,30 @@ class gps_utils {
 			long: lon
 		};
 	}
+	/**
+	 * 计算当地重力加速度
+	 * @param {Object} lat 纬度
+	 * @param {Object} sea_level 海拔
+	 */
+	static getG(lat,sea_level){
+		return 9.780327*(1+0.0053024*Math.pow(Math.sin(common.toRadians(lat)),2)-0.0000058*(Math.pow(Math.sin(common.toRadians(2*lat)),2)))-0.000003086*sea_level
+	}
+	/**
+	 * 转地地理平面坐标
+	 */
+	static toEarthCoordinate(target,ref={long:0,lat:0},R=6371){
+	  var x=R*common.toRadians(target.long-ref.long)*Math.cos(common.toRadians(target.lat))
+	  var y=R*common.toRadians(target.lat-ref.lat)
+	  return {x,y};
+	}
+	/**
+	 * 地理平面坐标转
+	 */
+	static toGpsCoordinate(x,y,R=6371){
+	  var lat=y/R*180/Math.PI;
+	  var long=x/R/Math.cos(y/R)*180/Math.PI;
+	  return {lat:lat,long:long};
+	}
 
 }
 export {
