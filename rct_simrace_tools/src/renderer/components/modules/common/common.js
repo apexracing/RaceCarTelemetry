@@ -213,7 +213,7 @@ class gps_utils {
 	/**
 	 * 转地地理平面坐标
 	 */
-	static toEarthCoordinate(target,ref={long:0,lat:0},R=6371){
+	static toEarthCoordinate(target,ref={long:0,lat:0},R=6378137){
 	  var x=R*common.toRadians(target.long-ref.long)*Math.cos(common.toRadians(target.lat))
 	  var y=R*common.toRadians(target.lat-ref.lat)
 	  return {x,y};
@@ -221,7 +221,7 @@ class gps_utils {
 	/**
 	 * 地理平面坐标转
 	 */
-	static toGpsCoordinate(x,y,R=6371){
+	static toGpsCoordinate(x,y,R=6378137){
 	  var lat=y/R*180/Math.PI;
 	  var long=x/R/Math.cos(y/R)*180/Math.PI;
 	  return {lat:lat,long:long};

@@ -1,7 +1,7 @@
 <template>
 	<el-container>
-		<el-aside width="auto">
-			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" max-height="550" height="550" border :row-class-name="lapsDataClass"
+		<el-aside width="410px">
+			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" height="550" border :row-class-name="lapsDataClass"
 			 @current-change="lapsSelection" highlight-current-row>
 				<el-table-column prop="lap" label="lap" width="80">
 				</el-table-column>
@@ -14,15 +14,26 @@
 				<el-table-column prop="laptime" label="laptime" width="120">
 				</el-table-column>
 			</el-table>
-			<div id="track_map" style="border:#EBEEF5 solid 1px;margin-top: 5px;">
-				<svg width="400" height="400">
-					<g></g>
-				</svg>
-			</div>
+			<el-tabs>
+				<el-tab-pane label="赛道地图">
+					<div id="track_map" style="border:#EBEEF5 solid 1px;">
+						<svg width="400" height="400">
+							<g></g>
+						</svg>
+					</div>
+				</el-tab-pane>
+				<el-tab-pane label="合成G力">
+					<div id="gg_map" style="border:#EBEEF5 solid 1px;">
+						<svg width="400" height="400">
+							<g></g>
+						</svg>
+					</div>
+				</el-tab-pane>
+			</el-tabs>
+
 		</el-aside>
-		<el-container>
-			<el-header>
-				<div class="info">
+		<el-main>
+			<!-- <div class="info">
 					<div class="play">
 						<el-row>
 							<el-col :span="8">
@@ -67,23 +78,13 @@
 							</el-descriptions>
 						</el-col>
 					</el-row>
-				</div>
-				<div>
-					<el-row>
-						<el-col :span="6">
-							<div id="gg_map">
-								<svg width="400" height="400" style="border:#EBEEF5 solid 1px;">
-									<g></g>
-								</svg>
-							</div>
-						</el-col>
-					</el-row>
-				</div>
-			</el-header>
-			<el-main>
-
-			</el-main>
-		</el-container>
+				</div> -->
+			<div id="analysis_chart">
+				<svg width="800" height="550" style="border:#EBEEF5 solid 1px;">
+					<g></g>
+				</svg>
+			</div>
+		</el-main>
 	</el-container>
 
 </template>
@@ -113,9 +114,9 @@
 				zoom: 15, //地图最大细节倍数
 				xscl: undefined,
 				yscl: undefined,
-				ggmap_xScale:undefined,
-				ggmap_yScale:undefined,
-				ggmap_color:undefined,
+				ggmap_xScale: undefined,
+				ggmap_yScale: undefined,
+				ggmap_color: undefined,
 				trackerPlayer: 0,
 				triggers: [],
 				trigger_id: 0,
@@ -200,27 +201,28 @@
 				});
 
 				var section = "";
+				var last_time=null;
 				objReadline.on('line', (line) => {
 					if (line.startsWith("[")) {
 						section = line;
 					} else if (line.length > 0) {
 						if (section == "[column names]") {
 							var columns = line.trim().split(" ");
-							this.vob_column=columns.map(function(d){
+							this.vob_column = columns.map(function(d) {
 								//适配harry'laptimer和Racechrono导出的vbo文件
-							  if(d=="longacc"){
-							    return "acc_x"
-							  }
-								if(d=="latacc"){
-								  return "acc_y"
+								if (d == "longacc") {
+									return "acc_x"
 								}
-								if(d=="x_acc-acc"){
-								  return "acc_x"
+								if (d == "latacc") {
+									return "acc_y"
 								}
-								if(d=="y_acc-acc"){
-								  return "acc_y"
+								if (d == "x_acc-acc") {
+									return "acc_x"
 								}
-							  return d;
+								if (d == "y_acc-acc") {
+									return "acc_y"
+								}
+								return d;
 							})
 						}
 						if (section == "[data]") {
@@ -230,27 +232,40 @@
 								var column_name = this.vob_column[i];
 								if (column_name == "time") {
 									vob_row_data[column_name] = vob_row[i];
+									if(last_time!=null){
+										vob_row_data["time_diff"] = (parseFloat(vob_row[i])*100-last_time)/100;
+									}else{
+										last_time=parseFloat(vob_row[i])*100;
+										vob_row_data["time_diff"] =0;
+									}
 								} else {
 									vob_row_data[column_name] = parseFloat(vob_row[i]);
 								}
 							}
-							//通过GPS计算gps加速度通道数据gps_longacc,gps_latacc
-							var latlong=gps_utils.convertLatLngToDecimal({lat:vob_row_data["lat"],long:vob_row_data["long"]})
-							vob_row_data["lat"]=latlong.lat;
-							vob_row_data["long"]=-latlong.long;
-							var xy=gps_utils.toEarthCoordinate(vob_row_data);
-							vob_row_data["x"]=xy.x;
-							vob_row_data["y"]=xy.y;
+							var latlong = gps_utils.convertLatLngToDecimal({
+								lat: vob_row_data["lat"],
+								long: vob_row_data["long"]
+							})
+							vob_row_data["lat"] = latlong.lat;
+							vob_row_data["long"] = -latlong.long;
+							//添加平面坐标通道,单位:米
+							var xy = gps_utils.toEarthCoordinate(vob_row_data);
+							vob_row_data["x"] = xy.x;
+							vob_row_data["y"] = xy.y;
 							this.vob_data.push(vob_row_data);
+							//添加roll倾角通道
+
 						}
 					}
 				});
 				objReadline.on('close', () => {
 					console.log("VOB文件分析完成")
-					console.log(this.vob_data)
 					this.render_track_vob();
+					this.render_analysis_chart(this.vob_data, {
+						channels: ["long", "lat", "velocity", "heading"]
+					});
 					//console.log(this.vob_column);
-					//console.log(this.vob_data);
+					console.log(this.vob_data);
 					loading.close();
 				});
 			},
@@ -289,7 +304,7 @@
 				svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.right).scale(1 / this.zoom * 2))
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
-						
+
 						return d.long;
 					})) //use just the x part
 					.range([0, width * this.zoom])
@@ -417,8 +432,9 @@
 				}
 				seTrigger = seTrigger[0];
 				var found_idx = 0;
-				var begin_trigger=false,end_trigger=false;
-				var last_millsecond = 0;//moment(this.vob_data[found_idx].time, "HHmmss.SS");
+				var begin_trigger = false,
+					end_trigger = false;
+				var last_millsecond = 0; //moment(this.vob_data[found_idx].time, "HHmmss.SS");
 				for (var i = 0; i < this.vob_data.length - 1; i++) {
 					var current_vob = this.vob_data[i];
 					var next_vob = this.vob_data[i + 1];
@@ -430,22 +446,26 @@
 						y: next_vob.lat
 					});
 					if (cross) {
-						console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross,seTrigger,current_vob,next_vob, i)
+						console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross, seTrigger, current_vob,
+							next_vob, i)
 						//发现一个单圈数据
 						var timeCurrent = moment(current_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
 						var timeNext = moment(next_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
 
 						var distanceVob = gps_utils.distanceTo(current_vob, next_vob)
-						var distanceCross = gps_utils.distanceTo(current_vob, {lat: cross.y,long: cross.x});
+						var distanceCross = gps_utils.distanceTo(current_vob, {
+							lat: cross.y,
+							long: cross.x
+						});
 						//计算当前位置与交点垂直距离，相邻两采样点(速度,距离，时间)三维数据，使用线性插值算法估算时间到实际触发点时间,距离->速度，距离/速度(km/h)
 						var velocityCross = common.lineInterpolationInvert(distanceCross, [0, distanceVob], [current_vob.velocity,
 							next_vob.velocity
 						]);
-						var end = timeCurrent+distanceCross/(velocityCross*1000/3600)*1000;
-						if(!begin_trigger){
-							begin_trigger=true;
+						var end = timeCurrent + distanceCross / (velocityCross * 1000 / 3600) * 1000;
+						if (!begin_trigger) {
+							begin_trigger = true;
 							last_millsecond = end;
-						}else{
+						} else {
 							var millsecond = end - last_millsecond;
 							if (millsecond > 20000) {
 								//小于10秒不算单圈
@@ -457,12 +477,12 @@
 									laptime: moment.utc(Math.ceil(millsecond)).format('mm.ss.SS'),
 									class: 'row_normal'
 								});
-								last_millsecond=end;
-							}else{
-									continue;
+								last_millsecond = end;
+							} else {
+								continue;
 							}
 						}
-						found_idx=i;
+						found_idx = i;
 						console.log("预估结束时间:%f,采样点结束时间:%s,到终点距离:%f米,采样点瞬时速度:%f", end, timeCurrent, distanceCross, current_vob.velocity)
 					}
 				}
@@ -509,12 +529,12 @@
 				var g = svg.select("g")
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
-					
+
 				this.ggmap_xScale = d3.scaleLinear()
-					.domain([-1.5,1.5])
+					.domain([-1.5, 1.5])
 					.range([0, width])
 				this.ggmap_yScale = d3.scaleLinear()
-					.domain([-1.5,1.5])
+					.domain([-1.5, 1.5])
 					.range([height, 0])
 				this.ggmap_color = d3.scaleOrdinal()
 					.domain([-2, 2])
@@ -546,11 +566,39 @@
 				var ggMap = d3.select("#gg_map svg g").selectAll("dot").data(this.vob_data);
 				ggMap.enter()
 					.append("circle")
-					.attr("cx", (d)=> this.ggmap_xScale(d.acc_y))
-					.attr("cy", (d)=> this.ggmap_yScale(d.acc_x))
+					.attr("cx", (d) => this.ggmap_xScale(d.acc_y))
+					.attr("cy", (d) => this.ggmap_yScale(d.acc_x))
 					.attr("r", 1)
-					.style("fill", (d)=> this.ggmap_color(d.acc_x));
-					ggMap.exit().remove();
+					.style("fill", (d) => this.ggmap_color(d.acc_x));
+				ggMap.exit().remove();
+			},
+			render_analysis_chart(data, {
+				channels = [],
+				x = (d) => d.time_diff
+			}) {
+				var margin = {
+					top: 15,
+					right: 15,
+					bottom: 15,
+					left: 15
+				};
+				var svg = d3.select("#analysis_chart svg");
+				
+				var width = svg.attr("width") - margin.left - margin.right;
+				var height = svg.attr('height') - margin.top - margin.bottom;
+				var g = svg.select("g")
+					.attr("transform",
+						"translate(" + margin.left + "," + margin.top + ")");
+
+				var X = d3.map(data, x);
+				var xDomain = d3.extent(X);
+				var xScale = d3.scaleLinear(xDomain, [0, width]);
+				var xAxis = d3.axisTop(xScale).tickSize(0).tickSize(-height-margin.top-margin.bottom);
+				//移除横线
+				var xG=g.append("g")
+					.attr("class", "x axis")
+					.call(xAxis);
+				xG.selectAll("line").attr("transform","translate(0,"+-margin.top+")")	
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -579,7 +627,7 @@
 	}
 </script>
 
-<style>
+<style >
 	.info {
 		box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 		min-width: 800px;
@@ -595,11 +643,11 @@
 		margin-bottom: 10px;
 	}
 
-	svg .track_trigger {
+	#track_map svg .track_trigger {
 		stroke-width: 2;
 	}
 
-	svg path {
+	#track_map svg path {
 		stroke-width: 2;
 		stroke: green;
 	}
@@ -620,5 +668,27 @@
 
 	.el-table .row_leave {
 		background: #909399;
+	}
+
+	.el-main {}
+	
+	#analysis_chart .axis path {
+		fill: none;
+		stroke: #000000;
+		stroke-width: 0;
+		shape-rendering: crispEdges;
+	}
+	 
+	#analysis_chart .axis text {
+		fill: #555;
+	}
+	 
+	#analysis_chart .axis line {	
+		stroke: #e7e7e7;
+		shape-rendering: crispEdges;
+	}
+	 
+	#analysis_chart .axis .axis-label {
+		font-size: 14px;
 	}
 </style>
