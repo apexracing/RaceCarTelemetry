@@ -201,7 +201,7 @@
 				});
 
 				var section = "";
-				var last_time=null;
+				var last_time = null;
 				objReadline.on('line', (line) => {
 					if (line.startsWith("[")) {
 						section = line;
@@ -232,11 +232,11 @@
 								var column_name = this.vob_column[i];
 								if (column_name == "time") {
 									vob_row_data[column_name] = vob_row[i];
-									if(last_time!=null){
-										vob_row_data["time_diff"] = (parseFloat(vob_row[i])*100-last_time)/100;
-									}else{
-										last_time=parseFloat(vob_row[i])*100;
-										vob_row_data["time_diff"] =0;
+									if (last_time != null) {
+										vob_row_data["time_diff"] = (parseFloat(vob_row[i]) * 100 - last_time) / 100;
+									} else {
+										last_time = parseFloat(vob_row[i]) * 100;
+										vob_row_data["time_diff"] = 0;
 									}
 								} else {
 									vob_row_data[column_name] = parseFloat(vob_row[i]);
@@ -583,7 +583,7 @@
 					left: 15
 				};
 				var svg = d3.select("#analysis_chart svg");
-				
+
 				var width = svg.attr("width") - margin.left - margin.right;
 				var height = svg.attr('height') - margin.top - margin.bottom;
 				var g = svg.select("g")
@@ -593,12 +593,12 @@
 				var X = d3.map(data, x);
 				var xDomain = d3.extent(X);
 				var xScale = d3.scaleLinear(xDomain, [0, width]);
-				var xAxis = d3.axisTop(xScale).tickSize(0).tickSize(-height-margin.top-margin.bottom);
+				var xAxis = d3.axisTop(xScale).tickSize(0).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
-				var xG=g.append("g")
+				var xG = g.append("g")
 					.attr("class", "x axis")
 					.call(xAxis);
-				xG.selectAll("line").attr("transform","translate(0,"+-margin.top+")")	
+				xG.selectAll("line").attr("transform", "translate(0," + -margin.top + ")")
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -627,7 +627,7 @@
 	}
 </script>
 
-<style >
+<style>
 	.info {
 		box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 		min-width: 800px;
@@ -671,23 +671,23 @@
 	}
 
 	.el-main {}
-	
+
 	#analysis_chart .axis path {
 		fill: none;
 		stroke: #000000;
 		stroke-width: 0;
 		shape-rendering: crispEdges;
 	}
-	 
+
 	#analysis_chart .axis text {
 		fill: #555;
 	}
-	 
-	#analysis_chart .axis line {	
+
+	#analysis_chart .axis line {
 		stroke: #e7e7e7;
 		shape-rendering: crispEdges;
 	}
-	 
+
 	#analysis_chart .axis .axis-label {
 		font-size: 14px;
 	}
