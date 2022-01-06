@@ -233,9 +233,9 @@
 								if (column_name == "time") {
 									vob_row_data[column_name] = vob_row[i];
 									if (last_time != null) {
-										vob_row_data["time_diff"] = (parseFloat(vob_row[i]) * 100 - last_time) / 100;
+										vob_row_data["time_diff"] = moment(vob_row[i], "HHmmss.SS").valueOf()-last_time;
 									} else {
-										last_time = parseFloat(vob_row[i]) * 100;
+										last_time  = moment(vob_row[i], "HHmmss.SS").valueOf();
 										vob_row_data["time_diff"] = 0;
 									}
 								} else {
@@ -301,7 +301,7 @@
 						[width * this.zoom, height * this.zoom]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
-				svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left, margin.right).scale(1 / this.zoom * 2))
+				svg.call(zoom.transform, d3.zoomIdentity.scale(1 / this.zoom * 2))
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 
@@ -574,7 +574,7 @@
 			},
 			render_analysis_chart(data, {
 				channels = [],
-				x = (d) => d.time_diff
+				x = (d) => d.time_diff/1000
 			}) {
 				var margin = {
 					top: 15,
@@ -586,19 +586,29 @@
 
 				var width = svg.attr("width") - margin.left - margin.right;
 				var height = svg.attr('height') - margin.top - margin.bottom;
-				var g = svg.select("g")
+				var root = svg.select("g")
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
-
 				var X = d3.map(data, x);
-				var xDomain = d3.extent(X);
+				var xDomain =d3.extent(X);
+				
 				var xScale = d3.scaleLinear(xDomain, [0, width]);
-				var xAxis = d3.axisTop(xScale).tickSize(0).tickSize(-height - margin.top - margin.bottom);
+				var xAxis = d3.axisTop(xScale).tickFormat((d)=>{
+					var p =  !(d % 1) ?d:d3.format('.2f')(d);
+					return p+"秒"}).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
-				var xG = g.append("g")
-					.attr("class", "x axis")
+				var xG = root.append("g")
+					.attr("class", "axis axis--x")
 					.call(xAxis);
 				xG.selectAll("line").attr("transform", "translate(0," + -margin.top + ")")
+				var zoom=d3.zoom().scaleExtent([1,xDomain[1]*10]).translateExtent([[0,0],[width,height]])
+				.on("zoom",(e)=>{
+					var xt=e.transform.rescaleX(xScale);
+					root.select(".axis--x").call(xAxis.scale(xt));
+				})
+				svg.call(zoom)
+				svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1]/100))
+				
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
