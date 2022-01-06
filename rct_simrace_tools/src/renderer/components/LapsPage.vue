@@ -577,9 +577,9 @@
 				x = (d) => d.time_diff/1000
 			}) {
 				var margin = {
-					top: 15,
+					top: 0,
 					right: 15,
-					bottom: 15,
+					bottom: 0,
 					left: 15
 				};
 				var svg = d3.select("#analysis_chart svg");
@@ -598,16 +598,22 @@
 					return p+"秒"}).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
 				var xG = root.append("g")
-					.attr("class", "axis axis--x")
-					.call(xAxis);
-				xG.selectAll("line").attr("transform", "translate(0," + -margin.top + ")")
+					.call(xAxis)
+					.call(g=>g.select('path').remove())
+					.call(g=>g.selectAll("text").attr("x",20).attr("y",20).attr("fill","#555"))
+					.call(g=>g.selectAll("line").attr("stroke","#e7e7e7"))
+				//横向缩放
 				var zoom=d3.zoom().scaleExtent([1,xDomain[1]*10]).translateExtent([[0,0],[width,height]])
 				.on("zoom",(e)=>{
 					var xt=e.transform.rescaleX(xScale);
-					root.select(".axis--x").call(xAxis.scale(xt));
+					xG.call(xAxis.scale(xt))
+					.call(g=>g.select('path').remove())
+					.call(g=>g.selectAll("text").attr("x",20).attr("y",20).attr("fill","#555"))
+					.call(g=>g.selectAll("line").attr("stroke","#e7e7e7"))
 				})
-				svg.call(zoom)
-				svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1]/100))
+				svg.call(zoom);
+				svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1]/100));
+				
 				
 			},
 			start_ac() {
@@ -682,23 +688,4 @@
 
 	.el-main {}
 
-	#analysis_chart .axis path {
-		fill: none;
-		stroke: #000000;
-		stroke-width: 0;
-		shape-rendering: crispEdges;
-	}
-
-	#analysis_chart .axis text {
-		fill: #555;
-	}
-
-	#analysis_chart .axis line {
-		stroke: #e7e7e7;
-		shape-rendering: crispEdges;
-	}
-
-	#analysis_chart .axis .axis-label {
-		font-size: 14px;
-	}
 </style>
