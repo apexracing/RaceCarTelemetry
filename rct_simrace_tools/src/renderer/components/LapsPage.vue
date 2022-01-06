@@ -612,9 +612,18 @@
 					.call(g=>g.selectAll("line").attr("stroke","#e7e7e7"))
 				})
 				svg.call(zoom);
-				svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1]/100));
+				//svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1]/100));
+				//画各通道曲线
+				const I = d3.range(X.length);
 				
-				
+				var channelMap=new Map();
+				for(var c of channels){
+					channelMap.set(c,I);
+				};
+				root.append("g").selectAll("path").data(channelMap).join("path").attr("d",([channel,I])=>{
+					//根据不同channel
+					
+				});
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
