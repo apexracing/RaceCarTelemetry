@@ -628,7 +628,7 @@
 					return p + "秒"
 				}).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
-				var xG = channelView.append("g")
+				var xG = channelView.append("g").attr("class","x--axis")
 					.call(xAxis)
 					.call(g => g.select('path').remove())
 					.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
@@ -688,11 +688,22 @@
 				channelView.append("g").append("line").attr('class', 'realtimeDataLine')
 					.attr("x1", 0).attr("y1", height).attr("x2", width + margin.left + margin.right).attr("y2", height)
 					.attr("transform", "translate(-" + margin.left + ",0)");
-
+				channelView.append("g").attr('class','realtimeData')
+				.selectAll("text")
+				.data(channels)
+				.join("text")
+				.attr("fill", typeof color ==="function" ? (channel) => color(channel) : color)
+				.attr("x",(d,i)=>{
+					return i*120;
+				})
+				.attr("y",height+margin.bottom/2)
+				.text(d=>d+":")
+				.attr("id",d=>d);
+				
+				//数据二分查找器
 				var bisectX = d3.bisector(x).center;
 				//画鼠标数据定位竖线
 				var mouseLine = channelView.append("g").append("line").attr('class', 'mouseLine')
-					.attr("stroke", "red")
 					.attr("opacity", "0")
 					.attr("x1", 0).attr("y1", 0)
 					.attr("x2", 0).attr("y2", height + margin.top)
@@ -718,7 +729,7 @@
 
 						var mouse_xdata = xt.invert(mouse_x);
 						var dataIdx = bisectX(data, mouse_xdata);
-						console.log(data[dataIdx].heading)
+						d3.selectAll(".realtimeData text").text(d=>d+":"+data[dataIdx][d])
 					})
 
 				svg.call(zoom);
@@ -797,9 +808,30 @@
 	}
 
 	.el-main {}
-
-	.realtimeDataLine {
-		stroke: #888888;
+	
+	.x--axis line{
+		shape-rendering:crispEdges;
 		stroke-width: 1px;
+	}
+	.y_data {
+		shape-rendering:geometricPrecision;
+		stroke-width: 1px;
+	}
+	.mouseLine{
+		shape-rendering:crispEdges;
+		stroke: red;
+		stroke-width: 1px;
+		stroke-dasharray:3,1;
+	}
+	.realtimeDataLine {
+		shape-rendering:crispEdges;
+		file:none;
+		stroke-dasharray:5,5;
+		stroke: #909399;
+		stroke-width: 1px;
+	}
+	.realtimeData text{
+		text-rendering:optimizeLegibility;
+		font-size: 16px;
 	}
 </style>
