@@ -233,9 +233,9 @@
 								if (column_name == "time") {
 									vob_row_data[column_name] = vob_row[i];
 									if (last_time != null) {
-										vob_row_data["time_diff"] = moment(vob_row[i], "HHmmss.SS").valueOf()-last_time;
+										vob_row_data["time_diff"] = moment(vob_row[i], "HHmmss.SS").valueOf() - last_time;
 									} else {
-										last_time  = moment(vob_row[i], "HHmmss.SS").valueOf();
+										last_time = moment(vob_row[i], "HHmmss.SS").valueOf();
 										vob_row_data["time_diff"] = 0;
 									}
 								} else {
@@ -262,11 +262,11 @@
 					console.log("VOB文件分析完成")
 					this.render_track_vob();
 					this.render_analysis_chart(this.vob_data, {
-						channels: ["velocity","heading"],
-						color:function(c){
-							if(c==='heading'){
+						channels: ["velocity", "heading"],
+						color: function(c) {
+							if (c === 'heading') {
 								return 'green';
-							}else if(c==='velocity'){
+							} else if (c === 'velocity') {
 								return 'red';
 							}
 							return 'yellow';
@@ -582,8 +582,8 @@
 			},
 			render_analysis_chart(data, {
 				channels = [],
-				x = (d) => d.time_diff/1000,
-				color='blue'
+				x = (d) => d.time_diff / 1000,
+				color = 'blue'
 			}) {
 				var margin = {
 					top: 20,
@@ -599,95 +599,127 @@
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
 				var X = d3.map(data, x);
-				var xDomain =d3.extent(X);
-				
+				var xDomain = d3.extent(X);
+
 				var xScale = d3.scaleLinear(xDomain, [0, width]);
 				//各数据通道YScale,YDomain,YData存储到Map里
 				const I = d3.range(X.length);
-				var channelMap=new Map();
-				var channelData=new Map();
-				var channelDomain=new Map();
-				var channelScale=new Map();
-				var channelLine=new Map();
-				for(var c of channels){
-					channelMap.set(c,I);
-					var Y=d3.map(data,d=>d[c]);
-					var yDomain=d3.extent(Y);
+				var channelMap = new Map();
+				var channelData = new Map();
+				var channelDomain = new Map();
+				var channelScale = new Map();
+				var channelLine = new Map();
+				for (var c of channels) {
+					channelMap.set(c, I);
+					var Y = d3.map(data, d => d[c]);
+					var yDomain = d3.extent(Y);
 					var yScale = d3.scaleLinear(yDomain, [height, 0]);
-					channelDomain.set(c,yDomain);
-					channelScale.set(c,yScale);
-					channelData.set(c,Y);
-					var line=d3.line()
-					.x(i => xScale(X[i.n]))
-					.y(i => channelScale.get(i.channel)(channelData.get(i.channel)[i.n]));
-					channelLine.set(c,line);
+					channelDomain.set(c, yDomain);
+					channelScale.set(c, yScale);
+					channelData.set(c, Y);
+					var line = d3.line()
+						.x(i => xScale(X[i.n]))
+						.y(i => channelScale.get(i.channel)(channelData.get(i.channel)[i.n]));
+					channelLine.set(c, line);
 				};
-				
-				var xAxis = d3.axisTop(xScale).tickFormat((d)=>{
-					var p =  !(d % 1) ?d:d3.format('.2f')(d);
-					return p+"秒"}).tickSize(-height - margin.top - margin.bottom);
+
+				var xAxis = d3.axisTop(xScale).tickFormat((d) => {
+					var p = !(d % 1) ? d : d3.format('.2f')(d);
+					return p + "秒"
+				}).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
 				var xG = root.append("g")
 					.call(xAxis)
-					.call(g=>g.select('path').remove())
-					.call(g=>g.selectAll("text").attr("x",20).attr("fill","#555"))
-					.call(g=>g.selectAll("line").attr("stroke","#e7e7e7").attr("transform","translate(0,-"+margin.top+")"))
+					.call(g => g.select('path').remove())
+					.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
+					.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
 				//横向缩放
-				var zoom=d3.zoom().scaleExtent([1,xDomain[1]*10]).translateExtent([[0,0],[width,height]])
-				.on("zoom",(e)=>{
-					var xt=e.transform.rescaleX(xScale);
-					xG.call(xAxis.scale(xt))
-					.call(g=>g.select('path').remove())
-					.call(g=>g.selectAll("text").attr("x",20).attr("fill","#555"))
-					.call(g=>g.selectAll("line").attr("stroke","#e7e7e7").attr("transform","translate(0,-"+margin.top+")"))
-					//
-					 root.selectAll(".y_data").attr("d",([channel,I])=>{
-						var linesData=d3.map(I,(i)=>{return {'n':i,'channel':channel}});
-						return channelLine.get(channel).x(function(i){
-							return xt(X[i.n]);
-						})(linesData);
-					}) 
-				
-				})
-			
+				var zoom = d3.zoom()
+					.scaleExtent([1, xDomain[1] * 10])
+					.translateExtent([
+						[0, 0],
+						[width, height]
+					])
+					.on("zoom", (e) => {
+						//xScale.range([0, width].map(d => e.transform.applyX(d)));
+						var xt = e.transform.rescaleX(xScale);
+					
+						 	var xt = e.transform.rescaleX(xScale);
+							xG.call(xAxis.scale(xt))
+								.call(g => g.select('path').remove())
+								.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
+								.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
+							//
+							root.selectAll(".y_data").attr("d", ([channel, I]) => {
+								var linesData = d3.map(I, (i) => {
+									return {
+										'n': i,
+										'channel': channel
+									}
+								});
+								return channelLine.get(channel).x(function(i) {
+									return xt(X[i.n]);
+								})(linesData);
+							}) 
+
+					})
+
 				//画各通道曲线
-			
+				root.append("clipPath")
+					.attr("id", "clip")
+					.append("rect")
+					.attr("width", width)
+					.attr("height", height);
 				root.append("g").attr("fill", "none")
-      .attr("stroke-width", 1)
-			.selectAll("path").data(channelMap).join("path").attr("class","y_data").attr("stroke",typeof color === "function" ? ([channel]) => color(channel) : color).attr("d",([channel,I])=>{
-					//根据不同channel
-					var linesData=d3.map(I,(i)=>{return {'n':i,'channel':channel}});
-					return channelLine.get(channel)(linesData);
-				});
+					.attr("stroke-width", 1)
+					.selectAll("path").data(channelMap).join("path").attr("clip-path", "url(#clip)").attr("class", "y_data").attr(
+						"stroke", typeof color ===
+						"function" ? ([channel]) => color(channel) : color).attr("d", ([channel, I]) => {
+						//根据不同channel
+						var linesData = d3.map(I, (i) => {
+							return {
+								'n': i,
+								'channel': channel
+							}
+						});
+						return channelLine.get(channel)(linesData);
+					});
+
+				var bisectX = d3.bisector(x).center;
 				//画鼠标数据定位竖线
-				var mouseLine=svg.append("g").append("line").attr('class','mouseLine')
-				.attr("stroke","red")
-				.attr("opacity","0")
-				.attr("x1",0).attr("y1",0)
-				.attr("x2",0).attr("y2",height+margin.top);
-				var mouseZone=svg.append('svg:rect')
-				.attr("width",width+margin.left+margin.right)
-				.attr("height",height)
-				.attr("fill","none")
-				.attr('pointer-events','all')
-				.on('mouseout',function(){
-					d3.select('.mouseLine').attr('opacity','0');
-				})
-				.on('mouseout',function(){
-					d3.select('.mouseLine').attr('opacity','0');
-				})
-				.on('mouseover',function(){
-					d3.select('.mouseLine').attr('opacity','1');
-				})
-				.on('mousemove',function(e){
-					var x=d3.pointer(e)[0];
-					d3.select('.mouseLine').attr('x1',x).attr('x2',x);
-				})
-			
+				var mouseLine = root.append("g").append("line").attr('class', 'mouseLine')
+					.attr("stroke", "red")
+					.attr("opacity", "0")
+					.attr("x1", 0).attr("y1", 0)
+					.attr("x2", 0).attr("y2", height + margin.top);
+				var mouseZone = root.append('svg:rect')
+					.attr("width", width)
+					.attr("height", height)
+					.attr("fill", "none")
+					.attr('pointer-events', 'all')
+					.on('mouseout', function() {
+						d3.select('.mouseLine').attr('opacity', '0');
+					})
+					.on('mouseout', function() {
+						d3.select('.mouseLine').attr('opacity', '0');
+					})
+					.on('mouseover', function() {
+						d3.select('.mouseLine').attr('opacity', '1');
+					})
+					.on('mousemove', function(e) {
+						var mouse_x = d3.pointer(e)[0];
+						d3.select('.mouseLine').attr('x1', mouse_x).attr('x2', mouse_x);
+						var xt =d3.zoomTransform(this).rescaleX(xScale);
+						
+						var mouse_xdata = xt.invert(mouse_x);
+						var dataIdx = bisectX(data, mouse_xdata);
+						console.log(data[dataIdx].heading)
+					})
+
 				svg.call(zoom);
-				svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1]/100));
-			
-							
+				svg.call(zoom.transform, d3.zoomIdentity.scale(xDomain[1] / 100));
+
+
 			},
 			start_ac() {
 				const client = new ACRemoteTelemetryClient("localhost");
@@ -760,5 +792,4 @@
 	}
 
 	.el-main {}
-
 </style>
