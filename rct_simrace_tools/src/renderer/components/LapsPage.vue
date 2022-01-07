@@ -266,13 +266,13 @@
 							name:'velocity',
 							label:'速度',
 							formater:(val)=>{
-								return val+"KM/H"
+								return d3.format('.3f')(val)+"KM/H"
 							}
 						},{
 							name:'heading',
 							label:'方位角',
 							formater:(val)=>{
-								return val+"°"
+								return d3.format('.2f')(val)+"°"
 							}
 						},{
 							name:'long',
