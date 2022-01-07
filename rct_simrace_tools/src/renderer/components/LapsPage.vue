@@ -262,12 +262,40 @@
 					console.log("VOB文件分析完成")
 					this.render_track_vob();
 					this.render_analysis_chart(this.vob_data, {
-						channels: ["velocity", "heading"],
+						channels: [{
+							name:'velocity',
+							label:'速度',
+							formater:(val)=>{
+								return val+"KM/H"
+							}
+						},{
+							name:'heading',
+							label:'方位角',
+							formater:(val)=>{
+								return val+"°"
+							}
+						},{
+							name:'long',
+							label:'经度',
+							formater:(val)=>{
+								return d3.format('.6f')(val)+"°"
+							}
+						},{
+							name:'lat',
+							label:'纬度',
+							formater:(val)=>{
+								return d3.format('.6f')(val)+"°"
+							}
+						}],
 						color: function(c) {
 							if (c === 'heading') {
 								return 'green';
 							} else if (c === 'velocity') {
 								return 'red';
+							} else if (c === 'lat') {
+								return 'blue';
+							} else if (c === 'long') {
+								return '#800080';
 							}
 							return 'yellow';
 						}
@@ -610,17 +638,18 @@
 				var channelScale = new Map();
 				var channelLine = new Map();
 				for (var c of channels) {
-					channelMap.set(c, I);
-					var Y = d3.map(data, d => d[c]);
+					var channelName=c.name;
+					channelMap.set(channelName, I);
+					var Y = d3.map(data, d => d[channelName]);
 					var yDomain = d3.extent(Y);
 					var yScale = d3.scaleLinear(yDomain, [height, 0]);
-					channelDomain.set(c, yDomain);
-					channelScale.set(c, yScale);
-					channelData.set(c, Y);
+					channelDomain.set(channelName, yDomain);
+					channelScale.set(channelName, yScale);
+					channelData.set(channelName, Y);
 					var line = d3.line()
 						.x(i => xScale(X[i.n]))
 						.y(i => channelScale.get(i.channel)(channelData.get(i.channel)[i.n]));
-					channelLine.set(c, line);
+					channelLine.set(channelName, line);
 				};
 
 				var xAxis = d3.axisTop(xScale).tickFormat((d) => {
@@ -692,13 +721,13 @@
 				.selectAll("text")
 				.data(channels)
 				.join("text")
-				.attr("fill", typeof color ==="function" ? (channel) => color(channel) : color)
+				.attr("fill", typeof color ==="function" ? (channel) => color(channel.name) : color)
 				.attr("x",(d,i)=>{
 					return i*120;
 				})
 				.attr("y",height+margin.bottom/2)
-				.text(d=>d+":")
-				.attr("id",d=>d);
+				.text(d=>d.label+":")
+				.attr("id",d=>d.name);
 				
 				//数据二分查找器
 				var bisectX = d3.bisector(x).center;
@@ -729,7 +758,9 @@
 
 						var mouse_xdata = xt.invert(mouse_x);
 						var dataIdx = bisectX(data, mouse_xdata);
-						d3.selectAll(".realtimeData text").text(d=>d+":"+data[dataIdx][d])
+						d3.selectAll(".realtimeData text").text(d=>{
+							return d.label+":"+(d.formater?d.formater(data[dataIdx][d.name]):data[dataIdx][d.name]);
+						})
 					})
 
 				svg.call(zoom);
@@ -832,6 +863,6 @@
 	}
 	.realtimeData text{
 		text-rendering:optimizeLegibility;
-		font-size: 16px;
+		font-size: 12px;
 	}
 </style>
