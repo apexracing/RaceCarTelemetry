@@ -798,8 +798,8 @@
 
 	.el-main {}
 
-	.realtimeDataLine line {
+	.realtimeDataLine {
 		stroke: #888888;
-		stroke-width: 0.1px;
+		stroke-width: 1px;
 	}
 </style>
