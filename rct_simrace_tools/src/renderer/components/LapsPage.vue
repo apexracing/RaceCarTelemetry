@@ -81,7 +81,7 @@
 				</div> -->
 			<div id="analysis_chart">
 				<svg width="100%" height="550" style="border:#EBEEF5 solid 1px;">
-					<g></g>
+					
 				</svg>
 			</div>
 		</el-main>
@@ -595,7 +595,7 @@
 
 				var width = svg.node().getBoundingClientRect().width - margin.left - margin.right;
 				var height = svg.attr('height') - margin.top - margin.bottom;
-				var root = svg.select("g")
+				var channelView = svg.append("g")
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
 				var X = d3.map(data, x);
@@ -628,7 +628,7 @@
 					return p + "秒"
 				}).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
-				var xG = root.append("g")
+				var xG = channelView.append("g")
 					.call(xAxis)
 					.call(g => g.select('path').remove())
 					.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
@@ -650,7 +650,7 @@
 								.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
 								.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
 							//
-							root.selectAll(".y_data").attr("d", ([channel, I]) => {
+							channelView.selectAll(".y_data").attr("d", ([channel, I]) => {
 								var linesData = d3.map(I, (i) => {
 									return {
 										'n': i,
@@ -665,12 +665,12 @@
 					})
 
 				//画各通道曲线
-				root.append("clipPath")
+				channelView.append("clipPath")
 					.attr("id", "clip")
 					.append("rect")
 					.attr("width", width)
 					.attr("height", height);
-				root.append("g").attr("fill", "none")
+				channelView.append("g").attr("fill", "none")
 					.attr("stroke-width", 1)
 					.selectAll("path").data(channelMap).join("path").attr("clip-path", "url(#clip)").attr("class", "y_data").attr(
 						"stroke", typeof color ===
@@ -687,12 +687,12 @@
 
 				var bisectX = d3.bisector(x).center;
 				//画鼠标数据定位竖线
-				var mouseLine = root.append("g").append("line").attr('class', 'mouseLine')
+				var mouseLine = channelView.append("g").append("line").attr('class', 'mouseLine')
 					.attr("stroke", "red")
 					.attr("opacity", "0")
 					.attr("x1", 0).attr("y1", 0)
 					.attr("x2", 0).attr("y2", height + margin.top);
-				var mouseZone = root.append('svg:rect')
+				var mouseZone = channelView.append('svg:rect')
 					.attr("width", width)
 					.attr("height", height)
 					.attr("fill", "none")
