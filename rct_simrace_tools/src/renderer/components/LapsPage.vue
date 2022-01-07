@@ -81,7 +81,7 @@
 				</div> -->
 			<div id="analysis_chart">
 				<svg width="100%" height="550" style="border:#EBEEF5 solid 1px;">
-					
+
 				</svg>
 			</div>
 		</el-main>
@@ -643,24 +643,24 @@
 					.on("zoom", (e) => {
 						//xScale.range([0, width].map(d => e.transform.applyX(d)));
 						var xt = e.transform.rescaleX(xScale);
-					
-						 	var xt = e.transform.rescaleX(xScale);
-							xG.call(xAxis.scale(xt))
-								.call(g => g.select('path').remove())
-								.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
-								.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
-							//
-							channelView.selectAll(".y_data").attr("d", ([channel, I]) => {
-								var linesData = d3.map(I, (i) => {
-									return {
-										'n': i,
-										'channel': channel
-									}
-								});
-								return channelLine.get(channel).x(function(i) {
-									return xt(X[i.n]);
-								})(linesData);
-							}) 
+
+						var xt = e.transform.rescaleX(xScale);
+						xG.call(xAxis.scale(xt))
+							.call(g => g.select('path').remove())
+							.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
+							.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
+						//
+						channelView.selectAll(".y_data").attr("d", ([channel, I]) => {
+							var linesData = d3.map(I, (i) => {
+								return {
+									'n': i,
+									'channel': channel
+								}
+							});
+							return channelLine.get(channel).x(function(i) {
+								return xt(X[i.n]);
+							})(linesData);
+						})
 
 					})
 
@@ -684,6 +684,10 @@
 						});
 						return channelLine.get(channel)(linesData);
 					});
+				//画底部数据显示标签
+				channelView.append("g").append("line").attr('class', 'realtimeDataLine')
+					.attr("x1", 0).attr("y1", height).attr("x2", width + margin.left + margin.right).attr("y2", height)
+					.attr("transform", "translate(-" + margin.left + ",0)");
 
 				var bisectX = d3.bisector(x).center;
 				//画鼠标数据定位竖线
@@ -691,7 +695,8 @@
 					.attr("stroke", "red")
 					.attr("opacity", "0")
 					.attr("x1", 0).attr("y1", 0)
-					.attr("x2", 0).attr("y2", height + margin.top);
+					.attr("x2", 0).attr("y2", height + margin.top)
+					.attr("transform", "translate(0,-" + margin.top + ")");
 				var mouseZone = channelView.append('svg:rect')
 					.attr("width", width)
 					.attr("height", height)
@@ -709,8 +714,8 @@
 					.on('mousemove', function(e) {
 						var mouse_x = d3.pointer(e)[0];
 						d3.select('.mouseLine').attr('x1', mouse_x).attr('x2', mouse_x);
-						var xt =d3.zoomTransform(this).rescaleX(xScale);
-						
+						var xt = d3.zoomTransform(this).rescaleX(xScale);
+
 						var mouse_xdata = xt.invert(mouse_x);
 						var dataIdx = bisectX(data, mouse_xdata);
 						console.log(data[dataIdx].heading)
@@ -792,4 +797,9 @@
 	}
 
 	.el-main {}
+
+	.realtimeDataLine line {
+		stroke: #888888;
+		stroke-width: 0.1px;
+	}
 </style>
