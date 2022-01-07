@@ -723,7 +723,7 @@
 				.join("text")
 				.attr("fill", typeof color ==="function" ? (channel) => color(channel.name) : color)
 				.attr("x",(d,i)=>{
-					return i*120;
+					return (i+1)*120;
 				})
 				.attr("y",height+margin.bottom/2)
 				.text(d=>d.label+":")
