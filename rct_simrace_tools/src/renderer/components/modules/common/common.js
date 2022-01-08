@@ -226,7 +226,11 @@ class gps_utils {
 	  var long=x/R/Math.cos(y/R)*180/Math.PI;
 	  return {lat:lat,long:long};
 	}
-
+	static toScreenXY(target,mapWidth,mapHeight){
+		var x=(target.long+180)*(mapWidth/360)
+		var y=(target.lat*-1)+90*(mapHeight/180)
+		return{x,y};
+	}
 }
 export {
 	common,

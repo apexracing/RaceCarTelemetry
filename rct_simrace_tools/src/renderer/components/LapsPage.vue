@@ -263,6 +263,13 @@
 					this.render_track_vob();
 					this.render_analysis_chart(this.vob_data, {
 						channels: [{
+							name:'time_diff',
+							label:'时间',
+							just_label:true,
+							formater:(val)=>{
+								return d3.format('.1f')(val/1000)+"秒"
+							}
+						},{
 							name:'velocity',
 							label:'速度',
 							formater:(val)=>{
@@ -297,7 +304,7 @@
 							} else if (c === 'long') {
 								return '#800080';
 							}
-							return 'yellow';
+							return '#303133';
 						}
 					});
 					//console.log(this.vob_column);
@@ -331,25 +338,24 @@
 						.attr('transform', e.transform);
 				}
 				let zoom = d3.zoom()
-					.scaleExtent([1 / this.zoom, 5])
+					.scaleExtent([1, 15])
 					.translateExtent([
 						[0, 0],
-						[width * this.zoom, height * this.zoom]
+						[width, height]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
-				svg.call(zoom.transform, d3.zoomIdentity.scale(1 / this.zoom * 2))
 				this.xscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 
 						return d.long;
 					})) //use just the x part
-					.range([0, width * this.zoom])
+					.range([0, width])
 
 				this.yscl = d3.scaleLinear()
 					.domain(d3.extent(this.vob_data, function(d) {
 						return d.lat;
 					})) // use just the y part
-					.range([height * this.zoom, 0])
+					.range([height, 0])
 
 
 				var path = g.append("path")
@@ -413,16 +419,16 @@
 				this.triggers.shift();
 
 				var trigger = {
-					p1: common.getRotatePoint(400 * this.zoom, {
+					p1: common.getRotatePoint(400, {
 						x: dest.x,
-						y: dest.y - 15 * this.zoom
+						y: dest.y - 15
 					}, {
 						x: dest.x,
 						y: dest.y
 					}, -angle),
-					p2: common.getRotatePoint(400 * this.zoom, {
+					p2: common.getRotatePoint(400, {
 						x: dest.x,
-						y: dest.y + 15 * this.zoom
+						y: dest.y + 15
 					}, {
 						x: dest.x,
 						y: dest.y
@@ -638,6 +644,9 @@
 				var channelScale = new Map();
 				var channelLine = new Map();
 				for (var c of channels) {
+					if(c.just_label){//不显示数据通道，紧显示标签数据
+						continue;
+					}
 					var channelName=c.name;
 					channelMap.set(channelName, I);
 					var Y = d3.map(data, d => d[channelName]);
@@ -701,9 +710,13 @@
 					.attr("height", height);
 				channelView.append("g").attr("fill", "none")
 					.attr("stroke-width", 1)
-					.selectAll("path").data(channelMap).join("path").attr("clip-path", "url(#clip)").attr("class", "y_data").attr(
+					.selectAll("path").data(channelMap).join("path")
+					.attr("clip-path", "url(#clip)")
+					.attr("class", "y_data")
+					.attr(
 						"stroke", typeof color ===
-						"function" ? ([channel]) => color(channel) : color).attr("d", ([channel, I]) => {
+						"function" ? ([channel]) => color(channel) : color)
+					.attr("d", ([channel, I]) => {
 						//根据不同channel
 						var linesData = d3.map(I, (i) => {
 							return {
@@ -723,7 +736,7 @@
 				.join("text")
 				.attr("fill", typeof color ==="function" ? (channel) => color(channel.name) : color)
 				.attr("x",(d,i)=>{
-					return (i+1)*120;
+					return i*120;
 				})
 				.attr("y",height+margin.bottom/2)
 				.text(d=>d.label+":")
@@ -816,7 +829,8 @@
 	}
 
 	#track_map svg path {
-		stroke-width: 2;
+	 shape-rendering:geometricPrecision;
+		stroke-width: 0.2px;
 		stroke: green;
 	}
 
