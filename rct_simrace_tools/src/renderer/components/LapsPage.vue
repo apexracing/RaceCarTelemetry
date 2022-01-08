@@ -265,13 +265,15 @@
 						channels: [{
 							name:'time_diff',
 							label:'时间',
-							just_label:true,
+							show_line:false,
 							formater:(val)=>{
 								return d3.format('.1f')(val/1000)+"秒"
 							}
 						},{
 							name:'velocity',
 							label:'速度',
+							percent:0.8,
+							show_yAxis:true,
 							formater:(val)=>{
 								return d3.format('.3f')(val)+"KM/H"
 							}
@@ -284,12 +286,14 @@
 						},{
 							name:'long',
 							label:'经度',
+							percent:0.5,
 							formater:(val)=>{
 								return d3.format('.6f')(val)+"°"
 							}
 						},{
 							name:'lat',
 							label:'纬度',
+							percent:0.3,
 							formater:(val)=>{
 								return d3.format('.6f')(val)+"°"
 							}
@@ -344,18 +348,20 @@
 						[width, height]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
-				this.xscl = d3.scaleLinear()
-					.domain(d3.extent(this.vob_data, function(d) {
-
+				var xDomain=d3.extent(this.vob_data, function(d) {
 						return d.long;
-					})) //use just the x part
-					.range([0, width])
+					});
+				var yDomain=d3.extent(this.vob_data, function(d) {
+							return d.lat;
+						});
+				var scaleXY=(xDomain[1]-xDomain[0])/(yDomain[1]-yDomain[0]);
+				this.xscl = d3.scaleLinear()
+					.domain(xDomain) //use just the x part
+					.range([0, scaleXY>1?width:width*scaleXY])
 
 				this.yscl = d3.scaleLinear()
-					.domain(d3.extent(this.vob_data, function(d) {
-						return d.lat;
-					})) // use just the y part
-					.range([height, 0])
+					.domain(yDomain) // use just the y part
+					.range([scaleXY>1?height/scaleXY:height, 0])
 
 
 				var path = g.append("path")
@@ -643,15 +649,17 @@
 				var channelDomain = new Map();
 				var channelScale = new Map();
 				var channelLine = new Map();
+				var channelYAxis=new Map();
 				for (var c of channels) {
-					if(c.just_label){//不显示数据通道，紧显示标签数据
+					if(c.show_line!=undefined&&!c.show_line){//不显示数据通道，紧显示标签数据
 						continue;
 					}
 					var channelName=c.name;
 					channelMap.set(channelName, I);
 					var Y = d3.map(data, d => d[channelName]);
 					var yDomain = d3.extent(Y);
-					var yScale = d3.scaleLinear(yDomain, [height, 0]);
+					var yRange=[height,c.percent>0?height*(1-c.percent):0];
+					var yScale = d3.scaleLinear(yDomain,yRange);
 					channelDomain.set(channelName, yDomain);
 					channelScale.set(channelName, yScale);
 					channelData.set(channelName, Y);
@@ -659,6 +667,16 @@
 						.x(i => xScale(X[i.n]))
 						.y(i => channelScale.get(i.channel)(channelData.get(i.channel)[i.n]));
 					channelLine.set(channelName, line);
+					if(c.show_yAxis){
+						var yAxis = d3.axisRight(yScale)
+						.tickFormat(c.formater?c.formater:(d)=>d)
+						.tickSize(width+margin.left+margin.right);
+						channelYAxis.set(c,yAxis);
+						channelView.append("g").attr('class',"y--axis")
+						.call(yAxis)
+						.call(g => g.select('path').remove())
+						.call(g => g.selectAll("text").attr("x", 1).attr('y',-5))
+					}
 				};
 
 				var xAxis = d3.axisTop(xScale).tickFormat((d) => {
@@ -669,8 +687,8 @@
 				var xG = channelView.append("g").attr("class","x--axis")
 					.call(xAxis)
 					.call(g => g.select('path').remove())
-					.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
-					.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
+					.call(g => g.selectAll("text").attr("x", 20))
+					.call(g => g.selectAll("line").attr("transform", "translate(0,-" + margin.top + ")"))
 				//横向缩放
 				var zoom = d3.zoom()
 					.scaleExtent([1, xDomain[1] * 10])
@@ -685,8 +703,8 @@
 						var xt = e.transform.rescaleX(xScale);
 						xG.call(xAxis.scale(xt))
 							.call(g => g.select('path').remove())
-							.call(g => g.selectAll("text").attr("x", 20).attr("fill", "#555"))
-							.call(g => g.selectAll("line").attr("stroke", "#e7e7e7").attr("transform", "translate(0,-" + margin.top + ")"))
+							.call(g => g.selectAll("text").attr("x", 20))
+							.call(g => g.selectAll("line").attr("transform", "translate(0,-" + margin.top + ")"))
 						//
 						channelView.selectAll(".y_data").attr("d", ([channel, I]) => {
 							var linesData = d3.map(I, (i) => {
@@ -741,7 +759,10 @@
 				.attr("y",height+margin.bottom/2)
 				.text(d=>d.label+":")
 				.attr("id",d=>d.name);
-				
+				//设置默认值为第一条数据内容
+				d3.selectAll(".realtimeData text").text(d=>{
+					return d.label+":"+(d.formater?d.formater(data[0][d.name]):data[0][d.name]);
+				})
 				//数据二分查找器
 				var bisectX = d3.bisector(x).center;
 				//画鼠标数据定位竖线
@@ -857,6 +878,21 @@
 	.x--axis line{
 		shape-rendering:crispEdges;
 		stroke-width: 1px;
+		stroke: #e7e7e7;
+	}
+	.x--axis text{
+		fill: #555;
+		font-size: 12px;
+	}
+	.y--axis line{
+		shape-rendering:crispEdges;
+		stroke-width: 1px;
+		stroke: #e7e7e7;
+		stroke-dasharray:3,1;
+	}
+	.y--axis text{
+		font-size: 12px;
+		fill: #555;
 	}
 	.y_data {
 		shape-rendering:geometricPrecision;
