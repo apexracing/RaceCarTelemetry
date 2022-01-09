@@ -86,14 +86,14 @@ class common {
 	/**
 	 * 离群算法，去除G力嗓点3sigma法
 	 */
-	static three_sigma(dataset,field,n=3){
+	static three_sigma(data,fn,n=2){
 		//均值
-		var mean=d3.mean(dataset,(d)=>d[field]);
+		var mean=d3.mean(data,(d)=>fn(d));
 		//全局标准差
-		var sigma =d3.deviation(dataset,(d)=>d[field]);
-		console.log(mean)
-		var newDataset=dataset.filter(function(d){
-			return Math.abs(d[field] - mean) > n * sigma
+		var sigma =d3.deviation(data,(d)=>fn(d));
+		console.log("离群算法 mean=%f,sigma=%f",mean,sigma)
+		var newDataset=data.filter(function(d){
+			return Math.abs(fn(d) - mean) < n * sigma
 		});
 		return newDataset;
 	}

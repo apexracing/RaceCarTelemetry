@@ -263,39 +263,40 @@
 					this.render_track_vob();
 					this.render_analysis_chart(this.vob_data, {
 						channels: [{
-							name:'time_diff',
-							label:'时间',
-							show_line:false,
-							formater:(val)=>{
-								return d3.format('.1f')(val/1000)+"秒"
+							name: 'time_diff',
+							label: '时间',
+							show_line: false,
+							formater: (val) => {
+								return d3.format('.1f')(val / 1000) + "秒"
 							}
-						},{
-							name:'velocity',
-							label:'速度',
-							percent:0.8,
-							show_yAxis:true,
-							formater:(val)=>{
-								return d3.format('.3f')(val)+"KM/H"
+						}, {
+							name: 'velocity',
+							label: '速度',
+							percent: 0.8,
+							formater: (val) => {
+								return d3.format('.2f')(val) + "Km/h"
 							}
-						},{
-							name:'heading',
-							label:'方位角',
-							formater:(val)=>{
-								return d3.format('.2f')(val)+"°"
+						}, {
+							name: 'heading',
+							label: '方位角',
+							show_yAxis: true,
+
+							formater: (val) => {
+								return d3.format('.2f')(val) + "°"
 							}
-						},{
-							name:'long',
-							label:'经度',
-							percent:0.5,
-							formater:(val)=>{
-								return d3.format('.6f')(val)+"°"
+						}, {
+							name: 'long',
+							label: '经度',
+							percent: 0.5,
+							formater: (val) => {
+								return d3.format('.6f')(val) + "°"
 							}
-						},{
-							name:'lat',
-							label:'纬度',
-							percent:0.3,
-							formater:(val)=>{
-								return d3.format('.6f')(val)+"°"
+						}, {
+							name: 'lat',
+							label: '纬度',
+							percent: 0.3,
+							formater: (val) => {
+								return d3.format('.6f')(val) + "°"
 							}
 						}],
 						color: function(c) {
@@ -348,20 +349,20 @@
 						[width, height]
 					]).on("zoom", handleZoom);
 				d3.select("#track_map svg").call(zoom);
-				var xDomain=d3.extent(this.vob_data, function(d) {
-						return d.long;
-					});
-				var yDomain=d3.extent(this.vob_data, function(d) {
-							return d.lat;
-						});
-				var scaleXY=(xDomain[1]-xDomain[0])/(yDomain[1]-yDomain[0]);
+				var xDomain = d3.extent(this.vob_data, function(d) {
+					return d.long;
+				});
+				var yDomain = d3.extent(this.vob_data, function(d) {
+					return d.lat;
+				});
+				var scaleXY = (xDomain[1] - xDomain[0]) / (yDomain[1] - yDomain[0]);
 				this.xscl = d3.scaleLinear()
 					.domain(xDomain) //use just the x part
-					.range([0, scaleXY>1?width:width*scaleXY])
+					.range([0, scaleXY > 1 ? width : width * scaleXY])
 
 				this.yscl = d3.scaleLinear()
 					.domain(yDomain) // use just the y part
-					.range([scaleXY>1?height/scaleXY:height, 0])
+					.range([scaleXY > 1 ? height / scaleXY : height, 0])
 
 
 				var path = g.append("path")
@@ -553,8 +554,7 @@
 				//最佳成绩显示样式
 				var bestLap = d3.minIndex(this.lapsData, d => Number(d.millsecond))
 				this.lapsData[bestLap].class = "row_best";
-				this.init_xyplot_vob();
-				this.render_xyplot_vob(this.lapsData[bestLap]);
+				this.render_xyplot_vob(this.vob_data);
 				/* this.$nextTick(function () {
 					this.$refs.lapTable.setCurrentRow(this.lapsData[bestLap]);
 				}) */
@@ -564,7 +564,13 @@
 				//this.lap_selection = lap;
 				//this.render_xyplot_vob(lap);
 			},
-			init_xyplot_vob() {
+			/**
+			 * 渲染抓地力圆图
+			 * @param {type} lap 要渲染的lapdata
+			 */
+			render_xyplot_vob(data) {
+				var data=common.three_sigma(data,(d)=>d.acc_x*d.acc_x+d.acc_y*d.acc_y);
+			
 				var margin = {
 					top: 5,
 					right: 5,
@@ -574,51 +580,54 @@
 				var svg = d3.select("#gg_map svg");
 				var width = svg.attr("width") - margin.left - margin.right;
 				var height = svg.attr('height') - margin.top - margin.bottom;
-				var g = svg.select("g")
+				var xyPlotView = svg.select("g")
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
-
+				var xDomain = d3.extent(data, function(d) {
+					return d.acc_y;
+				});
+				var yDomain = d3.extent(data, function(d) {
+					return d.acc_x;
+				});
+				var xyDomain=d3.extent(xDomain.concat(yDomain));
 				this.ggmap_xScale = d3.scaleLinear()
-					.domain([-1.5, 1.5])
+					.domain(xyDomain)
 					.range([0, width])
 				this.ggmap_yScale = d3.scaleLinear()
-					.domain([-1.5, 1.5])
+					.domain(xyDomain)
 					.range([height, 0])
-				this.ggmap_color = d3.scaleOrdinal()
-					.domain([-2, 2])
-					.range(["#F8766D", "#00BA38"])
-				// 定义X轴  
-				var xAxis = d3.axisBottom()
-					.scale(this.ggmap_xScale)
-					.ticks(11)
-				// 定义Y轴  
-				var yAxis = d3.axisLeft()
-					.scale(this.ggmap_yScale)
-					.ticks(11)
-				// 创建X轴, svg中： g元素是一个分组元素  
-				g.append('g')
-					.attr('class', 'axis')
-					.attr("transform", "translate(0," + 0.5 * height + ")") // 平移到水平中间
-					.call(xAxis);
-				// 创建Y轴  
-				g.append('g')
-					.attr('class', 'axis')
-					.attr("transform", "translate(" + 0.5 * width + ",0)") // 平移到竖直中间
-					.call(yAxis);
-			},
-			/**
-			 * 渲染抓地力圆图
-			 * @param {type} lap 要渲染的lapdata
-			 */
-			render_xyplot_vob(lap) {
-				var ggMap = d3.select("#gg_map svg g").selectAll("dot").data(this.vob_data);
-				ggMap.enter()
+				var maxG=d3.max(data.map(d=>d.acc_x*d.acc_x+d.acc_y*d.acc_y))
+				this.ggmap_color = d3.scaleSequential().domain([maxG,0])
+				.interpolator(d3.interpolateCool);
+				
+				xyPlotView.selectAll("dot").data(data)
+					.enter()
 					.append("circle")
 					.attr("cx", (d) => this.ggmap_xScale(d.acc_y))
 					.attr("cy", (d) => this.ggmap_yScale(d.acc_x))
 					.attr("r", 1)
-					.style("fill", (d) => this.ggmap_color(d.acc_x));
-				ggMap.exit().remove();
+					.style("fill", (d) => this.ggmap_color(d.acc_x*d.acc_x+d.acc_y*d.acc_y))
+					.exit().remove();
+				// 定义X轴
+				var xAxis = d3.axisBottom()
+					.scale(this.ggmap_xScale)
+					.tickFormat((d) => d+"G")
+					.ticks(11)
+				// 定义Y轴  
+				var yAxis = d3.axisLeft()
+					.scale(this.ggmap_yScale)
+					.tickFormat((d) => d+"G")
+					.ticks(11)
+				// 创建X轴, svg中： g元素是一个分组元素  
+				xyPlotView.append('g')
+					.attr('class', 'axis')
+					.attr("transform", "translate(0," + 0.5 * height + ")") // 平移到水平中间
+					.call(xAxis);
+				// 创建Y轴  
+				xyPlotView.append('g')
+					.attr('class', 'axis')
+					.attr("transform", "translate(" + 0.5 * width + ",0)") // 平移到竖直中间
+					.call(yAxis);
 			},
 			render_analysis_chart(data, {
 				channels = [],
@@ -649,17 +658,17 @@
 				var channelDomain = new Map();
 				var channelScale = new Map();
 				var channelLine = new Map();
-				var channelYAxis=new Map();
+				var channelYAxis = new Map();
 				for (var c of channels) {
-					if(c.show_line!=undefined&&!c.show_line){//不显示数据通道，紧显示标签数据
+					if (c.show_line != undefined && !c.show_line) { //不显示数据通道，紧显示标签数据
 						continue;
 					}
-					var channelName=c.name;
+					var channelName = c.name;
 					channelMap.set(channelName, I);
 					var Y = d3.map(data, d => d[channelName]);
 					var yDomain = d3.extent(Y);
-					var yRange=[height,c.percent>0?height*(1-c.percent):0];
-					var yScale = d3.scaleLinear(yDomain,yRange);
+					var yRange = [height, c.percent > 0 ? height * (1 - c.percent) : 0];
+					var yScale = d3.scaleLinear(yDomain, yRange);
 					channelDomain.set(channelName, yDomain);
 					channelScale.set(channelName, yScale);
 					channelData.set(channelName, Y);
@@ -667,15 +676,15 @@
 						.x(i => xScale(X[i.n]))
 						.y(i => channelScale.get(i.channel)(channelData.get(i.channel)[i.n]));
 					channelLine.set(channelName, line);
-					if(c.show_yAxis){
+					if (c.show_yAxis) {
 						var yAxis = d3.axisRight(yScale)
-						.tickFormat(c.formater?c.formater:(d)=>d)
-						.tickSize(width+margin.left+margin.right);
-						channelYAxis.set(c,yAxis);
-						channelView.append("g").attr('class',"y--axis")
-						.call(yAxis)
-						.call(g => g.select('path').remove())
-						.call(g => g.selectAll("text").attr("x", 1).attr('y',-5))
+							.tickFormat(c.formater ? c.formater : (d) => d)
+							.tickSize(width + margin.left + margin.right);
+						channelYAxis.set(c, yAxis);
+						channelView.append("g").attr('class', "y--axis")
+							.call(yAxis)
+							.call(g => g.select('path').remove())
+							.call(g => g.selectAll("text").attr("x", 1).attr('y', -5))
 					}
 				};
 
@@ -684,7 +693,7 @@
 					return p + "秒"
 				}).tickSize(-height - margin.top - margin.bottom);
 				//移除横线
-				var xG = channelView.append("g").attr("class","x--axis")
+				var xG = channelView.append("g").attr("class", "x--axis")
 					.call(xAxis)
 					.call(g => g.select('path').remove())
 					.call(g => g.selectAll("text").attr("x", 20))
@@ -748,20 +757,20 @@
 				channelView.append("g").append("line").attr('class', 'realtimeDataLine')
 					.attr("x1", 0).attr("y1", height).attr("x2", width + margin.left + margin.right).attr("y2", height)
 					.attr("transform", "translate(-" + margin.left + ",0)");
-				channelView.append("g").attr('class','realtimeData')
-				.selectAll("text")
-				.data(channels)
-				.join("text")
-				.attr("fill", typeof color ==="function" ? (channel) => color(channel.name) : color)
-				.attr("x",(d,i)=>{
-					return i*120;
-				})
-				.attr("y",height+margin.bottom/2)
-				.text(d=>d.label+":")
-				.attr("id",d=>d.name);
+				channelView.append("g").attr('class', 'realtimeData')
+					.selectAll("text")
+					.data(channels)
+					.join("text")
+					.attr("fill", typeof color === "function" ? (channel) => color(channel.name) : color)
+					.attr("x", (d, i) => {
+						return i * 120;
+					})
+					.attr("y", height + margin.bottom / 2)
+					.text(d => d.label + ":")
+					.attr("id", d => d.name);
 				//设置默认值为第一条数据内容
-				d3.selectAll(".realtimeData text").text(d=>{
-					return d.label+":"+(d.formater?d.formater(data[0][d.name]):data[0][d.name]);
+				d3.selectAll(".realtimeData text").text(d => {
+					return d.label + ":" + (d.formater ? d.formater(data[0][d.name]) : data[0][d.name]);
 				})
 				//数据二分查找器
 				var bisectX = d3.bisector(x).center;
@@ -792,8 +801,8 @@
 
 						var mouse_xdata = xt.invert(mouse_x);
 						var dataIdx = bisectX(data, mouse_xdata);
-						d3.selectAll(".realtimeData text").text(d=>{
-							return d.label+":"+(d.formater?d.formater(data[dataIdx][d.name]):data[dataIdx][d.name]);
+						d3.selectAll(".realtimeData text").text(d => {
+							return d.label + ":" + (d.formater ? d.formater(data[dataIdx][d.name]) : data[dataIdx][d.name]);
 						})
 					})
 
@@ -850,7 +859,7 @@
 	}
 
 	#track_map svg path {
-	 shape-rendering:geometricPrecision;
+		shape-rendering: geometricPrecision;
 		stroke-width: 0.2px;
 		stroke: green;
 	}
@@ -874,45 +883,52 @@
 	}
 
 	.el-main {}
-	
-	.x--axis line{
-		shape-rendering:crispEdges;
+
+	.x--axis line {
+		shape-rendering: crispEdges;
 		stroke-width: 1px;
 		stroke: #e7e7e7;
 	}
-	.x--axis text{
+
+	.x--axis text {
 		fill: #555;
 		font-size: 12px;
 	}
-	.y--axis line{
-		shape-rendering:crispEdges;
+
+	.y--axis line {
+		shape-rendering: crispEdges;
 		stroke-width: 1px;
 		stroke: #e7e7e7;
-		stroke-dasharray:3,1;
+		stroke-dasharray: 3, 1;
 	}
-	.y--axis text{
+
+	.y--axis text {
 		font-size: 12px;
 		fill: #555;
 	}
+
 	.y_data {
-		shape-rendering:geometricPrecision;
+		shape-rendering: geometricPrecision;
 		stroke-width: 1px;
 	}
-	.mouseLine{
-		shape-rendering:crispEdges;
+
+	.mouseLine {
+		shape-rendering: crispEdges;
 		stroke: red;
 		stroke-width: 1px;
-		stroke-dasharray:3,1;
+		stroke-dasharray: 3, 1;
 	}
+
 	.realtimeDataLine {
-		shape-rendering:crispEdges;
-		file:none;
-		stroke-dasharray:5,5;
+		shape-rendering: crispEdges;
+		file: none;
+		stroke-dasharray: 5, 5;
 		stroke: #909399;
 		stroke-width: 1px;
 	}
-	.realtimeData text{
-		text-rendering:optimizeLegibility;
+
+	.realtimeData text {
+		text-rendering: optimizeLegibility;
 		font-size: 12px;
 	}
 </style>
