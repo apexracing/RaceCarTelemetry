@@ -231,13 +231,7 @@
 							for (var i in vob_row) {
 								var column_name = this.vob_column[i];
 								if (column_name == "time") {
-									vob_row_data[column_name] = vob_row[i];
-									if (last_time != null) {
-										vob_row_data["time_diff"] = moment(vob_row[i], "HHmmss.SS").valueOf() - last_time;
-									} else {
-										last_time = moment(vob_row[i], "HHmmss.SS").valueOf();
-										vob_row_data["time_diff"] = 0;
-									}
+									vob_row_data[column_name] = moment(vob_row[i], "HHmmss.SS").valueOf();
 								} else {
 									vob_row_data[column_name] = parseFloat(vob_row[i]);
 								}
@@ -253,17 +247,50 @@
 							vob_row_data["x"] = xy.x;
 							vob_row_data["y"] = xy.y;
 							this.vob_data.push(vob_row_data);
-							//添加roll倾角通道
-
 						}
 					}
 				});
 				objReadline.on('close', () => {
+					//计算数学通道数据
+					var cloneData=[];
+				
+					var first_row=this.vob_data[0];
+					var last_row=first_row;
+					const G=9.80665;//重力加速度常量
+					for(var i=1;i<this.vob_data.length;i++){
+						 var vob_row=this.vob_data[i];
+						 //时间位移通道
+						vob_row["time_elapsed"] = vob_row["time"] -  first_row["time"];
+						var d_detla=(vob_row["time"] -  last_row["time"])/1000;//毫秒转为秒
+						var velocity=vob_row["velocity"]*1000/3600;//km/h->m/s
+						var velocity_last=last_row["velocity"]*1000/3600;//km/h->m/s
+						//添加lateral_acc 公式1:R=V/w(V是切向速度(米/秒),w是heading计算出的角速度(弧度/秒),R半径(米)) 公式2:A=V²/R/G (G=9.80665)
+						var headingDetla=vob_row["heading"]-last_row["heading"];
+						if(headingDetla>180){
+							headingDetla-=360;
+						}else if(headingDetla<-180){
+							headingDetla+=360;
+						}
+						var w=-1*headingDetla/180*Math.PI/d_detla;
+						var R=w==0?0:velocity/w;
+						
+						vob_row["lateral_acc"]=R==0?0:Math.pow(velocity,2)/R/G;
+						//添加longitudinal_acc;公式:(V1-V2)/dθ/G (V是速度,dθ时差)
+						vob_row["longitudinal_acc"]=(velocity-velocity_last)/d_detla/G;
+						//计算lean angle 公式:ARCTAN(lateral_acc)*180/PI
+						vob_row["lean_angle"]=Math.atan(vob_row["lateral_acc"])*180/Math.PI;
+						last_row=vob_row;
+						//添加行驶距离
+						vob_row["distance_traveled"]=0;
+						cloneData.push(vob_row);
+					}
+					this.vob_data=cloneData;
+					console.log(cloneData);
 					console.log("VOB文件分析完成")
 					this.render_track_vob();
 					this.render_analysis_chart(this.vob_data, {
 						channels: [{
-							name: 'time_diff',
+							name: 'time_elapsed',
 							label: '时间',
 							show_line: false,
 							formater: (val) => {
@@ -285,18 +312,18 @@
 								return d3.format('.2f')(val) + "°"
 							}
 						}, {
-							name: 'long',
-							label: '经度',
+							name: 'longitudinal_acc',
+							label: '纵向加速度',
 							percent: 0.5,
 							formater: (val) => {
-								return d3.format('.6f')(val) + "°"
+								return d3.format('.2f')(val) + "G"
 							}
 						}, {
-							name: 'lat',
-							label: '纬度',
+							name: 'lateral_acc',
+							label: '横向加速度',
 							percent: 0.3,
 							formater: (val) => {
-								return d3.format('.6f')(val) + "°"
+								return d3.format('.2f')(val) + "G"
 							}
 						}],
 						color: function(c) {
@@ -304,16 +331,15 @@
 								return 'green';
 							} else if (c === 'velocity') {
 								return 'red';
-							} else if (c === 'lat') {
+							} else if (c === 'longitudinal_acc') {
 								return 'blue';
-							} else if (c === 'long') {
+							} else if (c === 'lateral_acc') {
 								return '#800080';
 							}
 							return '#303133';
 						}
 					});
 					//console.log(this.vob_column);
-					console.log(this.vob_data);
 					loading.close();
 				});
 			},
@@ -498,8 +524,8 @@
 						console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross, seTrigger, current_vob,
 							next_vob, i)
 						//发现一个单圈数据
-						var timeCurrent = moment(current_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
-						var timeNext = moment(next_vob.time, "HHmmss.SS").valueOf(); //实际采样点单圈结束时间
+						var timeCurrent = current_vob.time; //实际采样点单圈结束时间
+						var timeNext = next_vob.time; //实际采样点单圈结束时间
 
 						var distanceVob = gps_utils.distanceTo(current_vob, next_vob)
 						var distanceCross = gps_utils.distanceTo(current_vob, {
@@ -584,10 +610,10 @@
 					.attr("transform",
 						"translate(" + margin.left + "," + margin.top + ")");
 				var xDomain = d3.extent(data, function(d) {
-					return d.acc_y;
+					return d.lateral_acc;
 				});
 				var yDomain = d3.extent(data, function(d) {
-					return d.acc_x;
+					return d.longitudinal_acc;
 				});
 				var xyDomain=d3.extent(xDomain.concat(yDomain));
 				this.ggmap_xScale = d3.scaleLinear()
@@ -596,17 +622,17 @@
 				this.ggmap_yScale = d3.scaleLinear()
 					.domain(xyDomain)
 					.range([height, 0])
-				var maxG=d3.max(data.map(d=>d.acc_x*d.acc_x+d.acc_y*d.acc_y))
+				var maxG=d3.max(data.map(d=>d.longitudinal_acc*d.longitudinal_acc+d.lateral_acc*d.lateral_acc))
 				this.ggmap_color = d3.scaleSequential().domain([maxG,0])
 				.interpolator(d3.interpolateCool);
 				
 				xyPlotView.selectAll("dot").data(data)
 					.enter()
 					.append("circle")
-					.attr("cx", (d) => this.ggmap_xScale(d.acc_y))
-					.attr("cy", (d) => this.ggmap_yScale(d.acc_x))
+					.attr("cx", (d) => this.ggmap_xScale(d.lateral_acc))
+					.attr("cy", (d) => this.ggmap_yScale(d.longitudinal_acc))
 					.attr("r", 1)
-					.style("fill", (d) => this.ggmap_color(d.acc_x*d.acc_x+d.acc_y*d.acc_y))
+					.style("fill", (d) => this.ggmap_color(d.longitudinal_acc*d.longitudinal_acc+d.lateral_acc*d.lateral_acc))
 					.exit().remove();
 				// 定义X轴
 				var xAxis = d3.axisBottom()
@@ -631,7 +657,7 @@
 			},
 			render_analysis_chart(data, {
 				channels = [],
-				x = (d) => d.time_diff / 1000,
+				x = (d) => d.time_elapsed / 1000,
 				color = 'blue'
 			}) {
 				var margin = {
