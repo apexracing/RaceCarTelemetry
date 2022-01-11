@@ -266,9 +266,10 @@
 						var velocity_last=last_row["velocity"]*1000/3600;//km/h->m/s
 						//添加lateral_acc 公式1:R=V/w(V是切向速度(米/秒),w是heading计算出的角速度(弧度/秒),R半径(米)) 公式2:A=V²/R/G (G=9.80665)
 						var headingDetla=vob_row["heading"]-last_row["heading"];
-						if(headingDetla>180){
+						var TH=180;//360度->1度,3度->360度，阀值
+						if(headingDetla>TH){
 							headingDetla-=360;
-						}else if(headingDetla<-180){
+						}else if(headingDetla<-TH){
 							headingDetla+=360;
 						}
 						var w=-1*headingDetla/180*Math.PI/d_detla;
