@@ -91,6 +91,8 @@
 
 <script>
 	/* eslint-disable */
+	import {KalmanEKF,KalmanObservation} from '@/components/modules/common/KalmanFilter'
+	
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
 	import {
 		common,
@@ -106,7 +108,6 @@
 	} = require('electron').remote;
 
 	import * as d3 from 'd3/dist/d3'
-
 	export default {
 		name: 'laps-page',
 		data() {
@@ -129,7 +130,7 @@
 			}
 		},
 		mounted() {
-			switch (this.$route.params.deviceId) {
+				switch (this.$route.params.deviceId) {
 				case 'ac':
 					{
 						this.loadingInstance = Loading.service({
@@ -152,7 +153,7 @@
 						break;
 					}
 				case 'vob':
-					{
+					{						
 						this.$data.sector_show = false;
 						this.$data.info_show = false;
 						this.$data.realtime_show = true;
@@ -264,7 +265,7 @@
 						var d_detla=(vob_row["time"] -  last_row["time"])/1000;//毫秒转为秒
 						var velocity=vob_row["velocity"]*1000/3600;//km/h->m/s
 						var velocity_last=last_row["velocity"]*1000/3600;//km/h->m/s
-						//添加lateral_acc 公式1:R=V/w(V是切向速度(米/秒),w是heading计算出的角速度(弧度/秒),R半径(米)) 公式2:A=V²/R/G (G=9.80665)
+						//添加lateral_acc 公式1:R=V/w(V是切向速度(米/秒),w是heading计算出的角速度(弧度/秒),R半径(米)) 公式2:A=V²/R/G=V*w/G (G=9.80665)
 						var headingDetla=vob_row["heading"]-last_row["heading"];
 						var TH=180;//360度->1度,3度->360度，阀值
 						if(headingDetla>TH){
@@ -272,14 +273,12 @@
 						}else if(headingDetla<-TH){
 							headingDetla+=360;
 						}
-						var w=-1*headingDetla/180*Math.PI/d_detla;
-						var R=w==0?0:velocity/w;
-						
-						vob_row["lateral_acc"]=R==0?0:Math.pow(velocity,2)/R/G;
+						var w=-1*headingDetla/180*Math.PI/d_detla;					
+						vob_row["lateral_acc"]=velocity*w/G;
 						//添加longitudinal_acc;公式:(V1-V2)/dθ/G (V是速度,dθ时差)
 						vob_row["longitudinal_acc"]=(velocity-velocity_last)/d_detla/G;
 						//计算lean angle 公式:ARCTAN(lateral_acc)*180/PI
-						vob_row["lean_angle"]=Math.atan(vob_row["lateral_acc"])*180/Math.PI;
+						vob_row["lean_angle"]=Math.atan(-vob_row["lateral_acc"])*180/Math.PI;
 						last_row=vob_row;
 						//添加行驶距离
 						vob_row["distance_traveled"]=0;
@@ -315,7 +314,7 @@
 						}, {
 							name: 'longitudinal_acc',
 							label: '纵向加速度',
-							percent: 0.5,
+							percent: 0.6,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
@@ -326,7 +325,14 @@
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
-						}],
+						}/* , {
+							name: 'lean_angle',
+							label: '倾角',
+							percent: 0.7,
+							formater: (val) => {
+								return d3.format('.2f')(val) + "°"
+							}
+						} */],
 						color: function(c) {
 							if (c === 'heading') {
 								return 'green';
