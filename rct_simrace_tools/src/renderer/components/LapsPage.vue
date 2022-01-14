@@ -294,16 +294,15 @@
 							]);
 						var P_0 = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
 						var F_k=math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
-						var Q_k=math.matrix([[0.005,0,0],[0,0.01,0],[0,0,1]]);
+						var Q_k=math.matrix([[Math.pow(d_detla,2),0,0],[0,0.01,0],[0,0,Math.pow(d_detla,2)]]);
 						var KM = new KalmanEKF(x_0,P_0,F_k,Q_k);
-						
 						var z_k = math.matrix([
 							[firstData.lateral_acc],
 							[firstData.longitudinal_acc],
 							[firstData.lean_angle],
 							]);
 						var H_k = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
-						var R_k = math.matrix([[0.4,0,0],[0,0.5,0],[0,0,1]]);
+						var R_k = math.matrix([[0.25,0,0],[0,0.15,0],[0,0,0.13]]);
 						var KO = new KalmanObservation(z_k,H_k,R_k);
 						cloneData=cloneData.map(row=>{
 							z_k = math.matrix([
@@ -319,6 +318,13 @@
 							row["lean_angle"]=KM.x_k._data[2][0];
 							return row;
 						});
+						KM.smooth();//RTS平滑
+						for(var i=0;i<KM.A_x_k.length;i++){
+							var x_k=KM.A_x_k[i];
+							cloneData[i]["lateral_acc"]=x_k._data[0][0];
+							cloneData[i]["longitudinal_acc"]=x_k._data[1][0];
+							cloneData[i]["lean_angle"]=x_k._data[2][0];
+						}
 					}
 					
 					this.vob_data=cloneData;
@@ -341,14 +347,6 @@
 								return d3.format('.2f')(val) + "Km/h"
 							}
 						}, {
-							name: 'heading',
-							label: '方位角',
-							show_yAxis: true,
-
-							formater: (val) => {
-								return d3.format('.2f')(val) + "°"
-							}
-						}, {
 							name: 'longitudinal_acc',
 							label: '纵向加速度',
 							percent: 0.6,
@@ -362,16 +360,16 @@
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
-						} /* , {
+						} , {
 							name: 'lean_angle',
 							label: '倾角',
 							percent: 0.7,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "°"
 							}
-						} */],
+						} ],
 						color: function(c) {
-							if (c === 'heading') {
+							if (c === 'lean_angle') {
 								return 'green';
 							} else if (c === 'velocity') {
 								return 'red';
@@ -639,7 +637,7 @@
 			 * @param {type} lap 要渲染的lapdata
 			 */
 			render_xyplot_vob(data) {
-				//var data=common.three_sigma(data,(d)=>d.acc_x*d.acc_x+d.acc_y*d.acc_y);
+				var data=common.three_sigma(data,(d)=>d.acc_x*d.acc_x+d.acc_y*d.acc_y);
 			
 				var margin = {
 					top: 5,
