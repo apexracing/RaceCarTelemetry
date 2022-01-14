@@ -92,6 +92,7 @@
 <script>
 	/* eslint-disable */
 	import {KalmanEKF,KalmanObservation} from '@/components/modules/common/KalmanFilter'
+	import * as math from 'mathjs'
 	
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
 	import {
@@ -284,6 +285,42 @@
 						vob_row["distance_traveled"]=0;
 						cloneData.push(vob_row);
 					}
+					if(cloneData.length>0){
+						var firstData=cloneData[0];
+						var x_0 = math.matrix([
+							[firstData.lateral_acc],
+							[firstData.longitudinal_acc],
+							[firstData.lean_angle],
+							]);
+						var P_0 = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
+						var F_k=math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
+						var Q_k=math.matrix([[0.005,0,0],[0,0.01,0],[0,0,1]]);
+						var KM = new KalmanEKF(x_0,P_0,F_k,Q_k);
+						
+						var z_k = math.matrix([
+							[firstData.lateral_acc],
+							[firstData.longitudinal_acc],
+							[firstData.lean_angle],
+							]);
+						var H_k = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
+						var R_k = math.matrix([[0.4,0,0],[0,0.5,0],[0,0,1]]);
+						var KO = new KalmanObservation(z_k,H_k,R_k);
+						cloneData=cloneData.map(row=>{
+							z_k = math.matrix([
+							[row.lateral_acc],
+							[row.longitudinal_acc],
+							[row.lean_angle],
+							]);
+							KO.z_k=z_k;
+							KM.update(KO);
+							//console.log(KM.x_k)
+						 	row["lateral_acc"]=KM.x_k._data[0][0];
+							row["longitudinal_acc"]=KM.x_k._data[1][0];
+							row["lean_angle"]=KM.x_k._data[2][0];
+							return row;
+						});
+					}
+					
 					this.vob_data=cloneData;
 					console.log(cloneData);
 					console.log("VOB文件分析完成")
@@ -318,14 +355,14 @@
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
-						}, {
+						} , {
 							name: 'lateral_acc',
 							label: '横向加速度',
-							percent: 0.3,
+							percent: 0.6,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
-						}/* , {
+						} /* , {
 							name: 'lean_angle',
 							label: '倾角',
 							percent: 0.7,
@@ -602,7 +639,7 @@
 			 * @param {type} lap 要渲染的lapdata
 			 */
 			render_xyplot_vob(data) {
-				var data=common.three_sigma(data,(d)=>d.acc_x*d.acc_x+d.acc_y*d.acc_y);
+				//var data=common.three_sigma(data,(d)=>d.acc_x*d.acc_x+d.acc_y*d.acc_y);
 			
 				var margin = {
 					top: 5,
