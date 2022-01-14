@@ -302,7 +302,7 @@
 							[firstData.lean_angle],
 							]);
 						var H_k = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
-						var R_k = math.matrix([[0.25,0,0],[0,0.15,0],[0,0,0.13]]);
+						var R_k = math.matrix([[0.25,0,0],[0,0.15,0],[0,0,0.5]]);
 						var KO = new KalmanObservation(z_k,H_k,R_k);
 						cloneData=cloneData.map(row=>{
 							z_k = math.matrix([
