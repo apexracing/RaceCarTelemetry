@@ -29,6 +29,54 @@
 						</svg>
 					</div>
 				</el-tab-pane>
+				<el-tab-pane label="数据通道">
+					<div id="analysis_channel" style="border:#EBEEF5 solid 1px;">
+						<el-form label-width="120px" size="small" :inline="true">
+							<el-form-item label="速度" >
+								<el-switch :active-color="view_channels.velocity.color" v-model="view_channels.velocity.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="海拔">
+								<el-switch :active-color="view_channels.height.color" v-model="view_channels.height.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="横向加速度">
+								<el-switch :active-color="view_channels.lateral_acc.color" v-model="view_channels.lateral_acc.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="纵向加速度">
+								<el-switch :active-color="view_channels.longitudinal_acc.color" v-model="view_channels.longitudinal_acc.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="合成加速度">
+								<el-switch :active-color="view_channels.combine_acc.color" v-model="view_channels.combine_acc.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="Delta-T">
+								<el-switch :active-color="view_channels.deltaT.color" v-model="view_channels.deltaT.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="方位角">
+								<el-switch :active-color="view_channels.heading.color" v-model="view_channels.heading.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="倾角">
+								<el-switch :active-color="view_channels.lean_angle.color" v-model="view_channels.lean_angle.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="经度">
+								<el-switch :active-color="view_channels.long.color" v-model="view_channels.long.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="纬度">
+								<el-switch :active-color="view_channels.lat.color" v-model="view_channels.lat.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="经过时间">
+								<el-switch :active-color="view_channels.time.color" v-model="view_channels.time.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="经过路程">
+								<el-switch :active-color="view_channels.distance.color" v-model="view_channels.distance.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="卫星">
+								<el-switch :active-color="view_channels.gps.color" v-model="view_channels.gps.display"></el-switch>
+							</el-form-item>
+							<el-form-item label="坐标精度">
+								<el-switch :active-color="view_channels.hdop.color" v-model="view_channels.hdop.display"></el-switch>
+							</el-form-item>
+						</el-form>
+					</div>
+				</el-tab-pane>
 			</el-tabs>
 
 		</el-aside>
@@ -91,9 +139,12 @@
 
 <script>
 	/* eslint-disable */
-	import {KalmanEKF,KalmanObservation} from '@/components/modules/common/KalmanFilter'
+	import {
+		KalmanEKF,
+		KalmanObservation
+	} from '@/components/modules/common/KalmanFilter'
 	import * as math from 'mathjs'
-	
+
 	import ACRemoteTelemetryClient from '@/components/modules/ac/ACRemoteTelemetryClient';
 	import {
 		common,
@@ -127,11 +178,69 @@
 				realtime_show: true,
 				sector_show: false,
 				lapsData: [],
-				lap_selection: null
+				lap_selection: null,
+				view_channels:{
+					velocity:{
+						display:true,
+						color:'#C22016'
+					},
+					height:{
+						display:true,
+						color:'#16B8C2'
+					},
+					heading:{
+						display:true,
+						color:'#C28316'
+					},
+					lateral_acc:{
+						display:true,
+						color:'#1655C2'
+					},
+					longitudinal_acc:{
+						display:true,
+						color:'#E4EB0D'
+					},
+					combine_acc:{
+						display:true,
+						color:'#62EB0D'
+					},
+					hdop:{
+						display:true,
+						color:'#960DEB'
+					},
+					gps:{
+						display:true,
+						color:'#EB0D90'
+					},
+					lat:{
+						display:true,
+						color:'#0DD7EB'
+					},
+					long:{
+						display:true,
+						color:'#EBBA0D'
+					},
+					time:{
+						display:true,
+						color:'#43BF7A'
+					},
+					distance:{
+						display:true,
+						color:'#AAFDDA'
+					},
+					lean_angle:{
+						display:true,
+						color:'#06747B'
+					},
+					deltaT:{
+						display:true,
+						color:'#2C2C2B'
+					}
+				}
 			}
 		},
 		mounted() {
-				switch (this.$route.params.deviceId) {
+			switch (this.$route.params.deviceId) {
 				case 'ac':
 					{
 						this.loadingInstance = Loading.service({
@@ -154,7 +263,7 @@
 						break;
 					}
 				case 'vob':
-					{						
+					{
 						this.$data.sector_show = false;
 						this.$data.info_show = false;
 						this.$data.realtime_show = true;
@@ -254,80 +363,92 @@
 				});
 				objReadline.on('close', () => {
 					//计算数学通道数据
-					var cloneData=[];
-				
-					var first_row=this.vob_data[0];
-					var last_row=first_row;
-					const G=9.80665;//重力加速度常量
-					for(var i=1;i<this.vob_data.length;i++){
-						 var vob_row=this.vob_data[i];
-						 //时间位移通道
-						vob_row["time_elapsed"] = vob_row["time"] -  first_row["time"];
-						var d_detla=(vob_row["time"] -  last_row["time"])/1000;//毫秒转为秒
-						var velocity=vob_row["velocity"]*1000/3600;//km/h->m/s
-						var velocity_last=last_row["velocity"]*1000/3600;//km/h->m/s
+					var cloneData = [];
+
+					var first_row = this.vob_data[0];
+					var last_row = first_row;
+					const G = 9.80665; //重力加速度常量
+					for (var i = 1; i < this.vob_data.length; i++) {
+						var vob_row = this.vob_data[i];
+						//时间位移通道
+						vob_row["time_elapsed"] = vob_row["time"] - first_row["time"];
+						var d_detla = (vob_row["time"] - last_row["time"]) / 1000; //毫秒转为秒
+						var velocity = vob_row["velocity"] * 1000 / 3600; //km/h->m/s
+						var velocity_last = last_row["velocity"] * 1000 / 3600; //km/h->m/s
 						//添加lateral_acc 公式1:R=V/w(V是切向速度(米/秒),w是heading计算出的角速度(弧度/秒),R半径(米)) 公式2:A=V²/R/G=V*w/G (G=9.80665)
-						var headingDetla=vob_row["heading"]-last_row["heading"];
-						var TH=180;//360度->1度,3度->360度，阀值
-						if(headingDetla>TH){
-							headingDetla-=360;
-						}else if(headingDetla<-TH){
-							headingDetla+=360;
+						var headingDetla = vob_row["heading"] - last_row["heading"];
+						var TH = 180; //360度->1度,3度->360度，阀值
+						if (headingDetla > TH) {
+							headingDetla -= 360;
+						} else if (headingDetla < -TH) {
+							headingDetla += 360;
 						}
-						var w=-1*headingDetla/180*Math.PI/d_detla;					
-						vob_row["lateral_acc"]=velocity*w/G;
+						var w = -1 * headingDetla / 180 * Math.PI / d_detla;
+						vob_row["lateral_acc"] = velocity * w / G;
 						//添加longitudinal_acc;公式:(V1-V2)/dθ/G (V是速度,dθ时差)
-						vob_row["longitudinal_acc"]=(velocity-velocity_last)/d_detla/G;
+						vob_row["longitudinal_acc"] = (velocity - velocity_last) / d_detla / G;
 						//计算lean angle 公式:ARCTAN(lateral_acc)*180/PI
-						vob_row["lean_angle"]=Math.atan(-vob_row["lateral_acc"])*180/Math.PI;
-						last_row=vob_row;
+						//vob_row["lean_angle"]=Math.atan(-vob_row["lateral_acc"])*180/Math.PI;
+						last_row = vob_row;
 						//添加行驶距离
-						vob_row["distance_traveled"]=0;
+						vob_row["distance_traveled"] = 0;
 						cloneData.push(vob_row);
 					}
-					if(cloneData.length>0){
-						var firstData=cloneData[0];
+					if (cloneData.length > 0) {
+						var firstData = cloneData[0];
 						var x_0 = math.matrix([
 							[firstData.lateral_acc],
-							[firstData.longitudinal_acc],
-							[firstData.lean_angle],
-							]);
-						var P_0 = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
-						var F_k=math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
-						var Q_k=math.matrix([[Math.pow(d_detla,2),0,0],[0,0.01,0],[0,0,Math.pow(d_detla,2)]]);
-						var KM = new KalmanEKF(x_0,P_0,F_k,Q_k);
+							[firstData.longitudinal_acc]
+						]);
+						var P_0 = math.matrix([
+							[1, 0],
+							[0, 1]
+						]);
+						var F_k = math.matrix([
+							[1, 0],
+							[0, 1]
+						]);
+						var Q_k = math.matrix([
+							[Math.pow(d_detla, 2), 0],
+							[0, 0.01]
+						]);
+						var KM = new KalmanEKF(x_0, P_0, F_k, Q_k);
 						var z_k = math.matrix([
 							[firstData.lateral_acc],
-							[firstData.longitudinal_acc],
-							[firstData.lean_angle],
-							]);
-						var H_k = math.matrix([[1,0,0],[0,1,0],[0,0,1]]);
-						var R_k = math.matrix([[0.25,0,0],[0,0.15,0],[0,0,0.5]]);
-						var KO = new KalmanObservation(z_k,H_k,R_k);
-						cloneData=cloneData.map(row=>{
+							[firstData.longitudinal_acc]
+						]);
+						var H_k = math.matrix([
+							[1, 0],
+							[0, 1]
+						]);
+						var R_k = math.matrix([
+							[0.25, 0],
+							[0, 0.15]
+						]);
+						var KO = new KalmanObservation(z_k, H_k, R_k);
+						cloneData = cloneData.map(row => {
 							z_k = math.matrix([
-							[row.lateral_acc],
-							[row.longitudinal_acc],
-							[row.lean_angle],
+								[row.lateral_acc],
+								[row.longitudinal_acc]
 							]);
-							KO.z_k=z_k;
+							KO.z_k = z_k;
 							KM.update(KO);
 							//console.log(KM.x_k)
-						 	row["lateral_acc"]=KM.x_k._data[0][0];
-							row["longitudinal_acc"]=KM.x_k._data[1][0];
-							row["lean_angle"]=KM.x_k._data[2][0];
+							row["lateral_acc"] = KM.x_k._data[0][0];
+							row["longitudinal_acc"] = KM.x_k._data[1][0];
 							return row;
 						});
-						KM.smooth();//RTS平滑
-						for(var i=0;i<KM.A_x_k.length;i++){
-							var x_k=KM.A_x_k[i];
-							cloneData[i]["lateral_acc"]=x_k._data[0][0];
-							cloneData[i]["longitudinal_acc"]=x_k._data[1][0];
-							cloneData[i]["lean_angle"]=x_k._data[2][0];
+						KM.smooth(); //RTS平滑
+						for (var i = 0; i < KM.A_x_k.length; i++) {
+							var x_k = KM.A_x_k[i];
+							var lateral_acc = x_k._data[0][0];
+							cloneData[i]["lateral_acc"] = lateral_acc;
+							cloneData[i]["longitudinal_acc"] = x_k._data[1][0];
+							cloneData[i]["lean_angle"] = Math.atan(-lateral_acc) * 180 / Math.PI
 						}
 					}
-					
-					this.vob_data=cloneData;
+
+					this.vob_data = cloneData;
 					console.log(cloneData);
 					console.log("VOB文件分析完成")
 					this.render_track_vob();
@@ -342,32 +463,32 @@
 						}, {
 							name: 'velocity',
 							label: '速度',
-							percent: 0.8,
+							percent: 1,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "Km/h"
 							}
 						}, {
 							name: 'longitudinal_acc',
 							label: '纵向加速度',
-							percent: 0.6,
+							percent: 1,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
-						} , {
+						}, {
 							name: 'lateral_acc',
 							label: '横向加速度',
-							percent: 0.6,
+							percent: 1,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "G"
 							}
-						} , {
+						}, {
 							name: 'lean_angle',
 							label: '倾角',
-							percent: 0.7,
+							percent: 1,
 							formater: (val) => {
 								return d3.format('.2f')(val) + "°"
 							}
-						} ],
+						}],
 						color: function(c) {
 							if (c === 'lean_angle') {
 								return 'green';
@@ -563,8 +684,8 @@
 						y: next_vob.lat
 					});
 					if (cross) {
-						console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross, seTrigger, current_vob,
-							next_vob, i)
+						/* console.log("计算单圈数据,发现新单圈.两线段交点:%o,trigger:%o,current_vob:%o,next_vob:%o,数据索引:%d", cross, seTrigger, current_vob,
+							next_vob, i) */
 						//发现一个单圈数据
 						var timeCurrent = current_vob.time; //实际采样点单圈结束时间
 						var timeNext = next_vob.time; //实际采样点单圈结束时间
@@ -600,7 +721,7 @@
 							}
 						}
 						found_idx = i;
-						console.log("预估结束时间:%f,采样点结束时间:%s,到终点距离:%f米,采样点瞬时速度:%f", end, timeCurrent, distanceCross, current_vob.velocity)
+						//console.log("预估结束时间:%f,采样点结束时间:%s,到终点距离:%f米,采样点瞬时速度:%f", end, timeCurrent, distanceCross, current_vob.velocity)
 					}
 				}
 				//最后剩余部分数据以灰度显示
@@ -637,8 +758,8 @@
 			 * @param {type} lap 要渲染的lapdata
 			 */
 			render_xyplot_vob(data) {
-				var data=common.three_sigma(data,(d)=>d.acc_x*d.acc_x+d.acc_y*d.acc_y);
-			
+				var data = common.three_sigma(data, (d) => d.acc_x * d.acc_x + d.acc_y * d.acc_y);
+
 				var margin = {
 					top: 5,
 					right: 5,
@@ -657,34 +778,34 @@
 				var yDomain = d3.extent(data, function(d) {
 					return d.longitudinal_acc;
 				});
-				var xyDomain=d3.extent(xDomain.concat(yDomain));
+				var xyDomain = d3.extent(xDomain.concat(yDomain));
 				this.ggmap_xScale = d3.scaleLinear()
 					.domain(xyDomain)
 					.range([0, width])
 				this.ggmap_yScale = d3.scaleLinear()
 					.domain(xyDomain)
 					.range([height, 0])
-				var maxG=d3.max(data.map(d=>d.longitudinal_acc*d.longitudinal_acc+d.lateral_acc*d.lateral_acc))
-				this.ggmap_color = d3.scaleSequential().domain([maxG,0])
-				.interpolator(d3.interpolateCool);
-				
+				var maxG = d3.max(data.map(d => d.longitudinal_acc * d.longitudinal_acc + d.lateral_acc * d.lateral_acc))
+				this.ggmap_color = d3.scaleSequential().domain([maxG, 0])
+					.interpolator(d3.interpolateCool);
+
 				xyPlotView.selectAll("dot").data(data)
 					.enter()
 					.append("circle")
 					.attr("cx", (d) => this.ggmap_xScale(d.lateral_acc))
 					.attr("cy", (d) => this.ggmap_yScale(d.longitudinal_acc))
 					.attr("r", 1)
-					.style("fill", (d) => this.ggmap_color(d.longitudinal_acc*d.longitudinal_acc+d.lateral_acc*d.lateral_acc))
+					.style("fill", (d) => this.ggmap_color(d.longitudinal_acc * d.longitudinal_acc + d.lateral_acc * d.lateral_acc))
 					.exit().remove();
 				// 定义X轴
 				var xAxis = d3.axisBottom()
 					.scale(this.ggmap_xScale)
-					.tickFormat((d) => d+"G")
+					.tickFormat((d) => d + "G")
 					.ticks(11)
 				// 定义Y轴  
 				var yAxis = d3.axisLeft()
 					.scale(this.ggmap_yScale)
-					.tickFormat((d) => d+"G")
+					.tickFormat((d) => d + "G")
 					.ticks(11)
 				// 创建X轴, svg中： g元素是一个分组元素  
 				xyPlotView.append('g')
