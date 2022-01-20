@@ -1,7 +1,7 @@
 <template>
 	<el-container>
 		<el-aside width="410px">
-			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" height="550" border :row-class-name="lapsDataClass">
+			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" height="500" border :row-class-name="lapsDataClass">
 			 <el-table-column
 			       fixed="left" width="35">
 			       <template slot-scope="scope">
@@ -42,14 +42,14 @@
 				</el-tab-pane>
 				<el-tab-pane label="数据通道">
 					<div id="analysis_channel" style="border:#EBEEF5 solid 1px;">
-						<el-form label-width="120px" size="small" :inline="true" label-suffix=":">
-							<el-form-item label="X轴">
+						<el-form label-width="120px" size="small" :inline="true" label-suffix=":" >
+							<el-form-item label="横轴">
 							<el-radio-group v-model="viewChannels.x_axis">
 								<el-radio-button label="路程"></el-radio-button>
 								<el-radio-button label="时间"></el-radio-button>
 							</el-radio-group>
 							</el-form-item>
-							<el-divider>Y轴</el-divider>
+							<el-divider>纵轴</el-divider>
 							<el-form-item label="速度" >
 								<el-switch :active-color="viewChannels.velocity.color" v-model="viewChannels.velocity.display"></el-switch>
 							</el-form-item>
@@ -98,7 +98,8 @@
 			</el-tabs>
 
 		</el-aside>
-		<el-main>
+		<el-container>
+		<el-main style="padding-top: 0px;padding-left: 5px;">
 			<!-- <div class="info">
 					<div class="play">
 						<el-row>
@@ -146,11 +147,12 @@
 					</el-row>
 				</div> -->
 			<div id="analysis_chart">
-				<svg width="100%" height="550" style="border:#EBEEF5 solid 1px;">
+				<svg width="100%" height="500">
 
 				</svg>
 			</div>
 		</el-main>
+		</el-container>
 	</el-container>
 
 </template>
@@ -1145,5 +1147,11 @@
 	}
 	.el-radio-group .el-radio-button__inner{
 		width:100px;
+	}
+	#analysis_chart svg{
+		background-color: #f7f7f7;
+	}
+	#analysis_channel .el-form-item{
+		margin-bottom: 5px;
 	}
 </style>
