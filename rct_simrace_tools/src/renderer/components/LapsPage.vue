@@ -1,8 +1,19 @@
 <template>
 	<el-container>
 		<el-aside width="410px">
-			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" height="550" border :row-class-name="lapsDataClass"
-			 @current-change="lapsSelection" highlight-current-row>
+			<el-table ref="lapTable" :data="lapsData" style="width: 100%;" height="550" border :row-class-name="lapsDataClass">
+			 <el-table-column
+			       fixed="left" width="35">
+			       <template slot-scope="scope">
+							 <el-dropdown trigger="click">
+							 <i class="el-icon-more"></i>
+							  <el-dropdown-menu slot="dropdown">
+									<el-dropdown-item>与此圈比较</el-dropdown-item>
+							    <el-dropdown-item>设为对比圈</el-dropdown-item>
+							   </el-dropdown-menu>
+							 </el-dropdown>
+			       </template>
+			   </el-table-column>
 				<el-table-column prop="lap" label="lap" width="80">
 				</el-table-column>
 				<el-table-column prop="s1" label="S1" width="120" v-if="sector_show">
@@ -31,48 +42,55 @@
 				</el-tab-pane>
 				<el-tab-pane label="数据通道">
 					<div id="analysis_channel" style="border:#EBEEF5 solid 1px;">
-						<el-form label-width="120px" size="small" :inline="true">
+						<el-form label-width="120px" size="small" :inline="true" label-suffix=":">
+							<el-form-item label="X轴">
+							<el-radio-group v-model="viewChannels.x_axis">
+								<el-radio-button label="路程"></el-radio-button>
+								<el-radio-button label="时间"></el-radio-button>
+							</el-radio-group>
+							</el-form-item>
+							<el-divider>Y轴</el-divider>
 							<el-form-item label="速度" >
-								<el-switch :active-color="view_channels.velocity.color" v-model="view_channels.velocity.display"></el-switch>
+								<el-switch :active-color="viewChannels.velocity.color" v-model="viewChannels.velocity.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="海拔">
-								<el-switch :active-color="view_channels.height.color" v-model="view_channels.height.display"></el-switch>
+								<el-switch :active-color="viewChannels.height.color" v-model="viewChannels.height.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="横向加速度">
-								<el-switch :active-color="view_channels.lateral_acc.color" v-model="view_channels.lateral_acc.display"></el-switch>
+								<el-switch :active-color="viewChannels.lateral_acc.color" v-model="viewChannels.lateral_acc.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="纵向加速度">
-								<el-switch :active-color="view_channels.longitudinal_acc.color" v-model="view_channels.longitudinal_acc.display"></el-switch>
+								<el-switch :active-color="viewChannels.longitudinal_acc.color" v-model="viewChannels.longitudinal_acc.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="合成加速度">
-								<el-switch :active-color="view_channels.combine_acc.color" v-model="view_channels.combine_acc.display"></el-switch>
+								<el-switch :active-color="viewChannels.combine_acc.color" v-model="viewChannels.combine_acc.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="Delta-T">
-								<el-switch :active-color="view_channels.deltaT.color" v-model="view_channels.deltaT.display"></el-switch>
+								<el-switch :active-color="viewChannels.deltaT.color" v-model="viewChannels.deltaT.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="方位角">
-								<el-switch :active-color="view_channels.heading.color" v-model="view_channels.heading.display"></el-switch>
+								<el-switch :active-color="viewChannels.heading.color" v-model="viewChannels.heading.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="倾角">
-								<el-switch :active-color="view_channels.lean_angle.color" v-model="view_channels.lean_angle.display"></el-switch>
+								<el-switch :active-color="viewChannels.lean_angle.color" v-model="viewChannels.lean_angle.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="经度">
-								<el-switch :active-color="view_channels.long.color" v-model="view_channels.long.display"></el-switch>
+								<el-switch :active-color="viewChannels.long.color" v-model="viewChannels.long.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="纬度">
-								<el-switch :active-color="view_channels.lat.color" v-model="view_channels.lat.display"></el-switch>
+								<el-switch :active-color="viewChannels.lat.color" v-model="viewChannels.lat.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="经过时间">
-								<el-switch :active-color="view_channels.time.color" v-model="view_channels.time.display"></el-switch>
+								<el-switch :active-color="viewChannels.time.color" v-model="viewChannels.time.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="经过路程">
-								<el-switch :active-color="view_channels.distance.color" v-model="view_channels.distance.display"></el-switch>
+								<el-switch :active-color="viewChannels.distance.color" v-model="viewChannels.distance.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="卫星">
-								<el-switch :active-color="view_channels.gps.color" v-model="view_channels.gps.display"></el-switch>
+								<el-switch :active-color="viewChannels.gps.color" v-model="viewChannels.gps.display"></el-switch>
 							</el-form-item>
 							<el-form-item label="坐标精度">
-								<el-switch :active-color="view_channels.hdop.color" v-model="view_channels.hdop.display"></el-switch>
+								<el-switch :active-color="viewChannels.hdop.color" v-model="viewChannels.hdop.display"></el-switch>
 							</el-form-item>
 						</el-form>
 					</div>
@@ -164,7 +182,6 @@
 		name: 'laps-page',
 		data() {
 			return {
-				zoom: 15, //地图最大细节倍数
 				xscl: undefined,
 				yscl: undefined,
 				ggmap_xScale: undefined,
@@ -179,7 +196,8 @@
 				sector_show: false,
 				lapsData: [],
 				lap_selection: null,
-				view_channels:{
+				viewChannels:{
+					x_axis:'路程',
 					velocity:{
 						display:true,
 						color:'#C22016'
@@ -292,6 +310,15 @@
 
 						break;
 					}
+			}
+		},
+		watch:{
+			viewChannels:{
+				deep:true,
+				handler(val){
+					//数据通道改变，刷新数据图
+					
+				}
 			}
 		},
 		methods: {
@@ -749,10 +776,6 @@
 				}) */
 
 			},
-			lapsSelection(lap) {
-				//this.lap_selection = lap;
-				//this.render_xyplot_vob(lap);
-			},
 			/**
 			 * 渲染抓地力圆图
 			 * @param {type} lap 要渲染的lapdata
@@ -1119,5 +1142,8 @@
 	.realtimeData text {
 		text-rendering: optimizeLegibility;
 		font-size: 12px;
+	}
+	.el-radio-group .el-radio-button__inner{
+		width:100px;
 	}
 </style>
