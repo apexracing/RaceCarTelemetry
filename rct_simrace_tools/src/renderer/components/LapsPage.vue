@@ -5,7 +5,7 @@
 			 <el-table-column
 			       fixed="left" width="35">
 			       <template slot-scope="scope">
-							 <el-dropdown trigger="click">
+							 <el-dropdown>
 							 <i class="el-icon-more"></i>
 							  <el-dropdown-menu slot="dropdown">
 									<el-dropdown-item>与此圈比较</el-dropdown-item>
@@ -205,51 +205,51 @@
 						color:'#C22016'
 					},
 					height:{
-						display:true,
+						display:false,
 						color:'#16B8C2'
 					},
 					heading:{
-						display:true,
+						display:false,
 						color:'#C28316'
 					},
 					lateral_acc:{
-						display:true,
+						display:false,
 						color:'#1655C2'
 					},
 					longitudinal_acc:{
-						display:true,
+						display:false,
 						color:'#E4EB0D'
 					},
 					combine_acc:{
-						display:true,
+						display:false,
 						color:'#62EB0D'
 					},
 					hdop:{
-						display:true,
+						display:false,
 						color:'#960DEB'
 					},
 					gps:{
-						display:true,
+						display:false,
 						color:'#EB0D90'
 					},
 					lat:{
-						display:true,
+						display:false,
 						color:'#0DD7EB'
 					},
 					long:{
-						display:true,
+						display:false,
 						color:'#EBBA0D'
 					},
 					time:{
-						display:true,
+						display:false,
 						color:'#43BF7A'
 					},
 					distance:{
-						display:true,
+						display:false,
 						color:'#AAFDDA'
 					},
 					lean_angle:{
-						display:true,
+						display:false,
 						color:'#06747B'
 					},
 					deltaT:{
